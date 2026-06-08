@@ -1,5 +1,113 @@
-Networking and edge.
+Welcome to notebook two of the system design track. This notebook walks the path a request takes from a user's browser to your servers and back. We cover how domain names resolve to addresses, how content delivery networks shorten that path, how load balancers split traffic at layer four and layer seven, the trade-offs between rest, gee-are-pee-see, and graph-q-l, and the standard recipes for rate limiting.
 
-What is covered.
+The path of a request.
 
-This notebook walks the path a request takes from a user's browser to your servers and back. We cover how domain names resolve to addresses, how content delivery networks shorten that path, how load balancers split traffic at layer four and layer seven, the trade-offs between REST, gee-are-pee-see, and graph-q-l, and the standard recipes for rate limiting.
+Before getting to specific components, fix the path a single h-t-t-p request takes. Every box on the path is a system you can design or break.
+
+The browser does a dee-en-ess lookup — it turns api dot example dot com into a numeric internet protocol address. The request then arrives at a content delivery network edge point of presence — often. Static assets are served from there if they are cached. If they are not, the edge forwards the request toward the origin. At the origin, a load balancer picks a healthy server out of the fleet and forwards the request to it. The application server then reads, writes, and fans out to downstream services — databases, caches, message queues.
+
+Each hop adds latency. The latency table from notebook one is the budget. A same-datacenter round-trip is half a millisecond. A cross-continent round-trip is forty milliseconds. A cross-world round-trip is one hundred fifty milliseconds. A request that crosses three of those hops sequentially can spend more time on the wire than in code. The job of this layer is to shorten the wire path — content delivery networks, edge points of presence — to avoid wasted hops — smart routing, connection reuse — and to fail gracefully when a downstream is slow.
+
+Domain name service — turning names into addresses.
+
+The domain name service is the distributed phone book of the internet. The browser needs an internet protocol address to open a transport-control-protocol connection. The user typed a name. The domain name service bridges the gap.
+
+The resolution chain. A name like api dot example dot com resolves through up to four levels.
+
+First, a recursive resolver. Usually run by your internet service provider, or a public service like Google's eight dot eight dot eight dot eight, or Cloudflare's one dot one dot one dot one. It does the heavy lifting and caches results.
+
+Second, root nameservers. They return the address of the right top-level domain server — for dot com, that is a specific set of servers.
+
+Third, top-level domain nameservers. They return the address of the authoritative server for example dot com.
+
+Fourth, the authoritative nameserver for example dot com. It returns the actual address for api dot example dot com.
+
+A fully cold lookup touches all four. With caching at every level, the typical lookup is a single round-trip to the resolver, which has the answer cached.
+
+Time to live, the t-t-l. Every domain name service record has a t-t-l telling caches how long to keep it. Short t-t-ls — thirty to three hundred seconds — let you change routing fast. That is useful for failover. Long t-t-ls — hours to days — reduce query load and protect against resolver outages. The trade-off is real. A one-hour t-t-l means a one-hour delay before a domain-name-service-based failover takes effect everywhere. Production services tend to run thirty to sixty second t-t-ls for records that might need to change quickly, and several hours for static records.
+
+Anycast. A single internet protocol address advertised from many physical locations. Border gateway protocol routes each user's packets to the nearest location. Google's eight-eight-eight-eight and Cloudflare's one-one-one-one resolvers are both anycast. There is no single server at those addresses. There are dozens, one per region. Content delivery network edge points of presence use the same trick. Anycast turns "send the request to the nearest server" into a routing problem solved by the network, not by application code.
+
+A short word on domain name service load balancing. Returning multiple a-records for one name — round-robin domain name service — is the cheapest form of load balancing, and the worst. Clients cache the answer. Resolvers cache the answer. You cannot weight by health or capacity. And removing a sick server takes one full t-t-l to propagate. Useful as a coarse layer. Never as your only layer.
+
+Content delivery networks — caching at the edge.
+
+A content delivery network is a distributed network of cache servers placed close to users — physically close, in major cities and at internet service provider exchange points. When a user requests an asset, the request hits the nearest edge point of presence. If the asset is cached there, the user gets it in five to twenty milliseconds instead of one hundred to two hundred milliseconds.
+
+What goes on a content delivery network. Static assets — images, javascript, c-s-s, videos, downloads. But also increasingly dynamic content with short t-t-ls — for example, edge caching of jay-son responses for sixty seconds. The decision criterion is how much staleness can the content tolerate. Anything that is the same for everyone and changes infrequently is an edge-caching win.
+
+Push versus pull. Pull is the default, and the common case. The content delivery network fetches content from the origin on the first request, caches it, and serves it from cache for the rest of the t-t-l. Simple to operate — you change your origin, the network catches up eventually. Push is when you upload content to the network explicitly. Used for large files where you do not want the first request to bear the origin-fetch latency, or for content that is not safely reachable from the public internet. Most modern content delivery networks — Cloudflare, Fastly, a-w-s CloudFront — are primarily pull with optional pre-warming.
+
+Cache invalidation — the hard problem. When the underlying content changes, the cached copy is now stale. Three common approaches. First — t-t-l expiry. Wait. Cheapest, but staleness can last as long as the t-t-l. Second — purge. Explicitly tell the network "invalidate this u-r-l". Reliable but rate-limited and slow — seconds to minutes globally. Third — versioned u-r-ls. Change the u-r-l when the content changes. App version twenty-three c-s-s instead of just app c-s-s. The network sees a new u-r-l, fetches the new content, the old u-r-l keeps serving the old version, which nobody requests anymore. This is the gold standard for static assets and what every modern build tool does by default.
+
+Why edge compute matters. Newer content delivery networks run code at the edge. Cloudflare Workers. Lambda at Edge. Fastly Compute. Authentication checks, a-b test routing, simple personalization can run within five to ten milliseconds of the user, never hitting the origin. This is where the boundary between content delivery network and application server is currently shifting.
+
+Load balancing — spreading the work.
+
+A load balancer sits between clients and your fleet of servers. It picks a healthy server, forwards the request, returns the response. From the client's view, the load balancer is the service.
+
+Two questions to ask about any load balancer. What layer does it work at — layer four, the transport layer, or layer seven, the application layer. And how does it pick a server — what algorithm.
+
+Layer four load balancers route at the t-c-p or u-d-p level. They see the source and destination internet protocol address and port. They do not see h-t-t-p, headers, paths, or cookies. Fast — no parsing, no termination — but limited to coarse routing. Examples — a-w-s network load balancer, haproxy in t-c-p mode, ip-virtual-server.
+
+Layer seven load balancers terminate the t-c-p connection, parse the h-t-t-p request, and route based on the request itself — path, headers, host, cookie. Slower — they parse every request — but they let you do path-based routing, header-based a-b routing, sticky sessions by cookie. Examples — a-w-s application load balancer, nginx, Envoy, haproxy in h-t-t-p mode.
+
+Which to pick. Layer four for raw throughput, transport-level services like databases or custom protocols, very high queries-per-second h-t-t-p where every microsecond matters. Layer seven for h-t-t-p services that need any of — path routing, host routing, cookies, header inspection, t-l-s termination at the load balancer, request mirroring, response rewriting. Most modern web services run layer seven. Most internal infrastructure — database proxies, remote procedure calls — runs layer four.
+
+Load balancing algorithms. How does the load balancer pick which server to forward the request to?
+
+Round-robin — server one, then two, then three, then back to one. Simple. Ignores load. Good when all servers are identical and all requests are equal-cost. Bad when either is false.
+
+Least connections — pick the server with the fewest active connections. Adapts to slow requests automatically. Slow requests hold connections. That server gets fewer new ones. A good default for variable-cost requests.
+
+Weighted round-robin or weighted least-connections — different weights per server. Useful during a deploy — give the new servers less traffic until they warm up — or for heterogeneous fleets where some servers are stronger than others.
+
+Internet-protocol-address hashing, also called sticky sessions — route the same client to the same server every time. Used when the server caches per-session state. Fragile. Losing the server loses the session. Discouraged in modern designs in favour of stateless servers with external session storage.
+
+Consistent hashing — hash the request key, like a user identifier or a cache key, to pick the server. Adding or removing a server only reshuffles a small fraction of keys, not all of them. Essential for cache shards, message brokers, distributed databases. The notebook works this one in code, because it shows up in every distributed system in the rest of the series.
+
+Consistent hashing — the algorithm.
+
+The shape is this. Each server, and each replica of it, lives on a circular hash space — picture a clock with two-to-the-thirty-second positions on its face. A key is placed on the clock by hashing it. Then you walk clockwise to the next server position. That is the server that owns the key.
+
+Virtual nodes give better distribution. Each server occupies many points on the ring — typically one hundred or so — so removing one server smears its keys across the rest of the ring rather than handing them all to one neighbour.
+
+The key property. Adding a fifth server to a four-server ring reshuffles about one-fifth of the keys — that is one over n. Not all of them. The notebook example runs ten thousand keys through a four-server ring, then adds a fifth server, and measures how many keys moved. The answer is around twenty percent, close to the theoretical one-fifth.
+
+Compare this to the naive alternative — hash the key, then take it modulo the number of servers. That reshuffles almost every key when the server count changes. Catastrophic if those keys are cache entries — mass cache miss — or shard locations — mass data migration. Consistent hashing is what makes cache fleets, sharded databases, and distributed-hash-table systems like Amazon DynamoDB and Cassandra tolerable to resize.
+
+Application programming interface design — rest versus gee-are-pee-see versus graph-q-l.
+
+Three dominant styles for designing the contract between a client and a server. Each makes different trade-offs.
+
+Rest — representational state transfer. The default for public ay-pee-eyes. h-t-t-p verbs — get, post, put, delete — act on resources identified by u-r-ls. Bodies are usually jay-son. The pros — universally understood, debuggable with a browser or curl, cacheable at the h-t-t-p layer — content delivery networks love gets — works through any firewall, easy to evolve by adding new fields and ignoring unknown ones. The cons — verbose on the wire, no schema enforced by default, over-fetching and under-fetching because the response is whatever the endpoint returns, not what the client wants. Use rest for public ay-pee-eyes, browser-served ay-pee-eyes, and low-to-moderate-load internal services where developer ergonomics matter more than wire efficiency.
+
+Gee-are-pee-see — Google's remote-procedure-call framework, built on h-t-t-p version two and Protocol Buffers, also called protobuf. The contract is a dot-proto file. Client and server code are generated from it. The pros — strict schema, compact binary wire format that is typically five to ten times smaller than jay-son, bidirectional streaming, generated clients in every major language, h-t-t-p version two multiplexing that gives much better connection reuse than rest. The cons — opaque on the wire because it is binary — you need the proto to decode. It needs h-t-t-p version two — some proxies and browsers struggle. It is not natively cacheable by h-t-t-p caches. Harder to debug. Browser support requires a wrapper layer. Use gee-are-pee-see for internal service-to-service communication, high-load or low-latency-budget paths, and polyglot fleets where one schema generates clients for go, java, python, and rust.
+
+Graph-q-l — a query language where the client declares what fields it needs and the server returns exactly that. One endpoint. One post. One flexible query. The pros — clients fetch exactly what they need, no over-fetch and no under-fetch, one round-trip for what would be many in rest, strong schema, great for user-interface code with deeply nested data needs. The cons — harder to cache because every query is different, harder to rate-limit because one query can be cheap or arbitrarily expensive, the n-plus-one query pattern is easy to introduce by accident, server-side complexity is significant, and it can be hard to debug at scale. Use graph-q-l for user-interface-facing ay-pee-eyes where one screen pulls from many resources, mobile clients on slow networks where round-trip savings matter, and apps with rapidly evolving frontends and a stable backend.
+
+Picking between them. A reasonable default. Public-facing ay-pee-eye — rest. Universal understanding wins. Internal service-to-service — gee-are-pee-see. Schema and wire efficiency win. Client-driven aggregation, such as a mobile app or a complex user interface — graph-q-l, often as a backend-for-frontend layer in front of rest or gee-are-pee-see. Many real systems use all three — rest for the public boundary, graph-q-l for the backend-for-frontend layer, gee-are-pee-see between services.
+
+Rate limiting — protecting the system from itself.
+
+Rate limiting caps the rate at which a client can make requests. It exists for three reasons. First — fair use. One abusive client cannot starve others of capacity. Second — cost control. Each request costs see-pee-you, memory, and downstream calls. Unbounded is unaffordable. Third — protection. A bug, a runaway script, or a deliberate attack cannot bring the system down.
+
+Rate limits are usually expressed as n requests per time window per key. The key might be a user identifier, an ay-pee-eye key, a source internet-protocol address, or a user-and-endpoint pair. The hard part is how to enforce the limit accurately with low overhead, especially across a fleet of servers.
+
+Four common algorithms. Fixed window — count requests in a clock-aligned bucket, like requests in the current minute. Simple. Suffers from boundary spikes. A client can hit the limit at the end of one window and again at the start of the next, doubling the effective rate at the boundary.
+
+Sliding window log — keep a timestamp for each request, count how many are within the last n seconds. Accurate. Memory cost is one slot per request per key. Expensive at high limits.
+
+Sliding window counter — approximate the sliding window using two adjacent fixed windows weighted by overlap. Cheap memory, almost as accurate as a real sliding window. The right choice when you cannot afford the log.
+
+Token bucket — a bucket holds n tokens, refills at r tokens per second. Each request consumes one token. Allows bursts up to n, then settles to the steady rate r. The canonical algorithm. What most cloud rate limiters use internally.
+
+The trade-off pattern. Simpler algorithms are cheaper but allow more burstiness or boundary cheating. Token bucket is the sweet spot for most applications.
+
+The notebook codes up a token bucket. Capacity of twenty. Refill rate of ten tokens per second. Slamming the bucket with thirty requests instantly allows twenty — that is the bucket capacity. After one second of refill, ten more requests are allowed — that is the refill rate times one second. The bucket gives you a burst budget for instant load and a sustained rate for ongoing load. Both knobs are useful.
+
+Distributed rate limiting is the next layer of complexity. If you have ten servers, each running an in-process token bucket, your effective limit is ten times whatever you configured. Three solutions. First — sticky routing. Route a given key consistently to the same server using consistent hashing again. Each server enforces the limit alone. Simple. Breaks under server failures. Second — centralized counter. A shared Redis or memcached holding the token bucket state. Every request consults the central store. Accurate but adds a round-trip and concentrates load. Third — two-tier approximation. Each server has a local approximate counter that periodically syncs with a central authority. Accurate-enough, low-latency. Used by most large-scale services.
+
+The pattern. Simple in-process rate limiting is fine for one server. Across a fleet, you need to pick what to give up — strict accuracy, latency, or simplicity. You cannot have all three.
+
+Notebook three turns to databases and storage — the persistence layer underneath every service. Relational versus document versus key-value stores. The indexing structures that make them fast — bee-tree, hash, and log-structured-merge-tree. Replication for fault tolerance and read scale. Sharding for write scale. And the cache strategies that sit in front of all of it. The latency table from notebook one is, again, the budget every choice has to fit into.
