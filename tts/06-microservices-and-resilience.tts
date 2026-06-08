@@ -1,0 +1,5 @@
+Microservices and resilience.
+
+What is covered.
+
+This notebook covers the architectural style most large systems land in, and the resilience patterns that keep it standing. We start with the real trade-offs between a monolith and microservices, then walk through the gateway and service mesh that wire services together, the saga pattern for transactions that cross service boundaries, and the resilience trio — circuit breaker, bulkhead, and idempotent retries.

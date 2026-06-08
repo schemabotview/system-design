@@ -1,0 +1,5 @@
+Operations and reliability.
+
+What is covered.
+
+This notebook covers the operational concerns that decide whether a well-designed system actually stays up. We cover the three pillars of observability, the deployment strategies that let you ship without taking traffic down, the failure modes that matter most in practice, and the techniques like graceful degradation and load shedding that keep a system useful when one of its parts breaks.

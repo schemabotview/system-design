@@ -1,0 +1,5 @@
+Databases and storage.
+
+What is covered.
+
+This notebook covers the storage layer — when a relational database is the right call versus when a no-sequel store fits better, how the common index structures work under the hood, how data is replicated across machines for read scale and fault tolerance, how sharding splits data across nodes, and the caching strategies that sit in front of it all.

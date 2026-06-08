@@ -1,0 +1,5 @@
+Distributed systems theory.
+
+What is covered.
+
+This notebook is the theoretical core of the series. We cover the cap theorem and the common misreadings of it, the consistency models that real systems actually offer, how Raft and Paxos let nodes agree on a single answer, how Lamport clocks and vector clocks let us reason about order without a shared wall clock, and how leader election plays out in practice.

@@ -1,0 +1,5 @@
+Networking and edge.
+
+What is covered.
+
+This notebook walks the path a request takes from a user's browser to your servers and back. We cover how domain names resolve to addresses, how content delivery networks shorten that path, how load balancers split traffic at layer four and layer seven, the trade-offs between REST, gee-are-pee-see, and graph-q-l, and the standard recipes for rate limiting.

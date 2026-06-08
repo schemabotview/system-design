@@ -1,0 +1,5 @@
+Case studies.
+
+What is covered.
+
+This notebook closes the series by working through five canonical system design problems end to end — a url shortener, a rate limiter, a twitter-style feed, a chat system, and a distributed cache. Each case study starts from requirements and capacity estimates, sketches the data model, walks the request path, and calls out the trade-offs we made along the way.

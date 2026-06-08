@@ -1,0 +1,5 @@
+Messaging and event-driven architectures.
+
+What is covered.
+
+This notebook covers the asynchronous side of distributed systems — message queues and their delivery guarantees, the publish-subscribe model, what it means to organize a whole system around events rather than requests, event sourcing as a way to make state derivable from a log, and command query responsibility segregation as a split-read-and-write pattern.

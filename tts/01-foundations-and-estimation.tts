@@ -1,0 +1,5 @@
+Foundations and estimation.
+
+What is covered.
+
+This notebook lays the groundwork for the rest of the series — what scalability really means, the difference between availability, reliability, and durability, why latency and throughput are not the same thing, and how to do quick back-of-envelope math on storage and request volume. We close with the latency numbers every engineer should keep in working memory.
