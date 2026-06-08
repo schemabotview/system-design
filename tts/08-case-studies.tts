@@ -1,5 +1,107 @@
-Case studies.
+Welcome to notebook eight, the final notebook of the system design track. This notebook works through five canonical system design problems end to end. A you-are-el shortener. A distributed rate limiter. A twitter-style timeline. A chat system. And a distributed cache. Each one starts from requirements and capacity estimates, sketches the data model and ay-pee-eye, walks the request path, and calls out the trade-offs along the way. The vocabulary from notebooks one through seven becomes the design language for all five.
 
-What is covered.
+How to read these designs.
 
-This notebook closes the series by working through five canonical system design problems end to end — a url shortener, a rate limiter, a twitter-style feed, a chat system, and a distributed cache. Each case study starts from requirements and capacity estimates, sketches the data model, walks the request path, and calls out the trade-offs we made along the way.
+Each case study follows the same four-step structure that is worth using on any system-design question, in interviews or in practice. First — requirements. What does the system have to do, and what does it have to not do. Functional requirements — the features. Non-functional requirements — scale, latency, consistency, availability. Second — capacity estimates. Run the back-of-envelope math from notebook one. Daily users. Queries per second. Storage growth. Bandwidth. The numbers narrow the design space. Third — high-level architecture. Sketch the components, data flow, data store choices, and request path. The draw-boxes-and-arrows part. Fourth — trade-offs and scale. Where will this hit a wall. What did we deliberately give up. How does the design evolve at ten times the scale.
+
+Skipping any of these four — especially the numbers — is the classic mistake. The numbers are how you justify every choice that follows.
+
+Case one — you-are-el shortener.
+
+The problem. Take a long you-are-el like h-t-t-p-s colon slash slash example dot com slash very slash long slash path, and return a short you-are-el like h-t-t-p-s colon slash slash sho dot r-t slash a-b three x-k nine. When a user visits the short you-are-el, redirect them to the original.
+
+Functional requirements. Submit a long you-are-el, get a short one back. A get on the short you-are-el redirects, with status three-oh-one or three-oh-two, to the long one. Optionally, custom aliases and expiry dates.
+
+Non-functional requirements. Reads vastly outnumber writes — about a thousand to one for link-shortening services. Redirect latency must be very low. Every user is waiting on it. Target p ninety-nine under fifty milliseconds end-to-end. High availability — a broken shortener breaks every link anyone has shared.
+
+Capacity estimates. Suppose one hundred million new links per month, one hundred billion clicks per month. Writes — one hundred million divided by thirty divided by eighty-six thousand four hundred is about forty writes per second. Tiny. Reads — one hundred billion divided by the same is about forty thousand reads per second. Significant. Storage per link — about five hundred bytes including the long you-are-el, short code, owner, timestamps, click count. Storage growth — one hundred million times five hundred bytes is fifty gigabytes per month. Six hundred gigabytes per year. Easy.
+
+The numbers tell us this is fundamentally a read-heavy, low-latency lookup problem. Storage volume is small. Compute per request is minimal. The whole game is — given a six-character code, return the long you-are-el fast.
+
+Architecture. The browser hits a content delivery network that caches popular redirects at the edge with a short t-t-l. Cache miss falls through to a load balancer, then to a stateless web tier. The web tier checks a Redis cache mapping short code to long you-are-el. On Redis miss, it goes to the database — DynamoDB, Cassandra, or sharded MySequel by short code.
+
+Generating short codes. The simplest scheme — assign a monotonically increasing integer identifier and base sixty-two-encode it, using the sixty-two characters of digits, lowercase, and uppercase. A six-character base sixty-two code addresses about fifty-seven billion you-are-els. Enough for years. The notebook codes up an encode and decode pair and demonstrates that identifier one billion encodes to a six-character code, identifier one trillion encodes to seven characters. Round-trips check out. Address space is fifty-seven billion at six chars, three and a half trillion at seven.
+
+Trade-offs and scale. The cache hit rate is everything. Most clicks are on a small set of popular links. A small in-memory cache catches the vast majority. Read replicas of the database handle the forty thousand reads per second. Asynchronous click counting — do not update a counter in the database on every click. Emit a click event to a queue and aggregate downstream. Otherwise the click-update write rate dominates the link-creation write rate. Content delivery network at the edge can serve redirects from the closest point of presence, which drops global users' latency dramatically. Set a short t-t-l, five to sixty minutes, so revoked links propagate within that window.
+
+Case two — distributed rate limiter.
+
+The problem. Allow each ay-pee-eye key to make at most n requests per minute. Reject the rest with h-t-t-p four-twenty-nine. The limit is enforced across a fleet of servers in different regions.
+
+Functional requirements. Per-ay-pee-eye-key limits, configurable per tier — free, pro, enterprise. Return rate-limit headers so clients can see how much budget they have left.
+
+Non-functional requirements. Decision must be fast, sub-millisecond at p ninety-nine. Accurate within a few percent. Exact counts not required. Highly available — limiter failure must not block all traffic.
+
+Capacity estimates. Ten million ay-pee-eye keys, ten thousand requests per second across the fleet, fifty servers behind the limiter. Decisions per second — ten thousand, one per incoming request. State per key — about fifty bytes. Total state — ten million times fifty bytes is five hundred megabytes. Fits comfortably in Redis on one machine. Hot keys — the top one percent of ay-pee-eye keys generate about eighty percent of traffic. Sharding by key handles this.
+
+The architecture choice from notebook two — token-bucket, centralized counter, or two-tier approximation. The two-tier design is the production sweet spot. Each application server has a local approximate counter. On every nth request, or every t milliseconds, the server syncs with the central Redis cluster — reports its local count, gets back the latest authoritative count. Between syncs, the local counter is the source of truth. The trade-off is that the limit may be exceeded at the edges by a few percent. This buys sub-millisecond decisions — local lookup — with global enforcement — central reconciliation.
+
+Trade-offs and scale. Failure mode. If Redis is down, options are fail open — allow everything, limits do not matter while Redis recovers — or fail closed — reject everything, safer for the protected service. Most production limiters fail open. Window choice — token bucket from notebook two is the typical implementation. Refill rate plus burst capacity. Avoids both fixed-window boundary issues and sliding-window memory cost. Sharding — Redis cluster shards by ay-pee-eye key. Hot keys can be replicated or pinned to dedicated shards. Client side — return a retry-after header so well-behaved clients back off properly. Do not just reject silently. That prompts blind retries that make it worse.
+
+Case three — twitter-style timeline.
+
+The problem. A user has a timeline of recent posts from people they follow. New posts appear at the top in roughly chronological order. The user pulls down the feed and reads it.
+
+Functional requirements. Post a status by a user. Follow another user. View timeline — most recent posts from followed users.
+
+Non-functional requirements. Read-heavy. Most users read their feed many times per day. Few post. Reads must be very fast. Eventual consistency is fine — a new post not appearing for a few seconds is acceptable. Some users have hundreds of millions of followers — the celebrity-tweet problem.
+
+Capacity estimates. Three hundred million monthly users, one hundred fifty million daily active. Average user follows two hundred, posts half a post per day, reads feed twenty times per day. Posts per second — about nine hundred at average, peak around twenty-five hundred. Timeline reads per second — about thirty-five thousand at average, peak around one hundred thousand. Storage growth — about seventy-five gigabytes of posts per day, twenty-seven terabytes per year. The read-to-write ratio is roughly forty to one. The architecture has to be optimized for reads.
+
+Two architectural choices. Fan-out on write, also called the push model, versus fan-out on read, also called the pull model.
+
+Fan-out on write. When a user posts, write the post identifier into the timeline of every follower. Reading a timeline is just a cheap lookup of the precomputed list. Pros — reads are constant time on a denormalized list. Cons — every post becomes n writes, where n is the follower count. For a celebrity with a hundred million followers, one post is a hundred million writes. Too expensive.
+
+Fan-out on read. When a user reads their timeline, query the posts of every user they follow and merge by timestamp. Writes are constant time. Reads are linear in the follow count. Pros — writes are cheap, easy. Cons — reads are expensive. A user following a thousand people triggers a thousand lookups plus merge. At scale, this dwarfs the write cost.
+
+The hybrid. Most production systems fan out on write for normal users, and fan out on read for celebrities. A user's timeline is the merge of two things — their precomputed timeline of normal-user posts, and freshly fetched recent posts from celebrity follows. Celebrity is defined by threshold — for example, follower count greater than one million.
+
+Trade-offs and scale. Storage of timelines — each user's timeline is the last roughly one thousand post identifiers in a Redis sorted set. Three hundred million users times one thousand entries times twenty bytes per entry is about six terabytes across the cluster. Fits. Cold-start — a user who has not logged in for a month may have an empty cached timeline. Rebuild it on read by querying their follow graph and merging. Real-time updates — long-polling, web-socket, or server-sent events from the timeline service push new posts as they arrive. Covered next in the chat system. Search and trending are separate systems — Elasticsearch for search, stream aggregation for trends. Out of scope for the timeline itself.
+
+Case four — chat system.
+
+The problem. Users exchange messages in one-to-one and group conversations. Messages are delivered in near-real-time. Presence — online or offline — is shown. History is preserved.
+
+Functional requirements. Send a message in a one-to-one or group conversation. Receive messages in real-time when online. Presence indicators. Message history. Read receipts and delivery confirmations.
+
+Non-functional requirements. Low end-to-end latency, under two hundred milliseconds in most cases. Reliable delivery — messages must not be lost. Scalable to millions of concurrent connections.
+
+Capacity estimates. Five hundred million users, one hundred million daily active, average fifty messages per user per day. Messages per second — about fifty-eight thousand at average, peak around one hundred seventy-five thousand. Concurrent connections — assume fifty percent of daily active users are online concurrently at peak. That is fifty million concurrent web-socket connections. Storage growth — five billion messages per day at five hundred bytes each is two and a half terabytes per day, about nine hundred terabytes per year. Large but sharded by conversation.
+
+Architecture. The client opens a web-socket to a load balancer with sticky routing by connection identifier. The load balancer forwards to a chat server that holds the long-lived web-socket connections. Incoming messages are published to a message bus — Kafka or Redis Streams. From the bus, four services subscribe. A message store — Cassandra. A delivery service that knows the recipients' chat servers. A notification service that pushes to mobile devices if the recipient is offline. A presence service backed by Redis.
+
+The connection-routing problem. Fifty million concurrent connections does not fit on one server. Connections are distributed across thousands of chat servers. When user a sends to user b. A's chat server publishes the message to the message bus. The delivery service knows which chat server b is connected to, via a Redis directory mapping user identifier to server identifier. The delivery service sends the message to b's chat server. B's chat server writes to b's web-socket.
+
+If b is offline, the message is stored in b's inbox in the message store. On next connection, b receives the backlog. A push notification through Apple Push Notification Service or Firebase Cloud Messaging wakes up b's mobile app.
+
+Trade-offs and scale. Web-socket versus long-polling. Web-socket is the default for real-time. Long-polling is the fallback when web-socket is not available, like in some corporate networks. Server-sent events is a one-way alternative useful for notification-only feeds. Message ordering — per-conversation ordering only. Across conversations, events can interleave. Per-conversation messages have a monotonically increasing sequence number to detect gaps. Reliability — at-least-once delivery with deduplication on the client by message identifier. Same pattern as notebook five. Group chats — a group message fans out to n recipients. For small groups, under a thousand, direct fan-out. For large channels, like Slack-style, the server publishes once and clients subscribe. End-to-end encryption — Signal, iMessage, WhatsApp — is layered on top. Messages are ciphertext from the server's perspective. The server only sees routing metadata. Complicates server-side features like search but is a separate problem.
+
+Case five — distributed cache.
+
+The problem. Build a system where applications store and retrieve cached values across a cluster. Sub-millisecond reads. Sharded across many machines. Replicated for fault tolerance.
+
+Functional requirements. Get a key returns the cached value or null. Set a key, value, and optional t-t-l. Delete a key. Capacity in the terabytes.
+
+Non-functional requirements. p ninety-nine read latency under one millisecond. Highly available — single machine failure does not take a key offline. Linear scale — adding capacity adds throughput proportionally.
+
+Capacity estimates. Five terabytes of hot data, one million reads per second, one hundred thousand writes per second, one kilobyte average value size. ram per node — two hundred fifty-six gigabytes means we need at least twenty nodes for raw storage, more for replication. Reads per node — one million divided by twenty is fifty thousand reads per second per node. Comfortable. Replication — two to three replicas per key. Actual cluster size is forty to sixty nodes.
+
+Architecture, built on patterns from earlier notebooks. The client uses consistent hashing on the key to pick a shard. Each shard has a primary plus one or two replicas. Reads go to the primary by default. Replicas serve reads when the primary is down. Writes go to the primary. The primary replicates asynchronously.
+
+Why async replication. The cache is for low latency. Synchronous replication would multiply write latency by the slowest replica's round-trip. The trade-off is that a primary failure might lose the most recent writes. Cache-as-source-of-truth scenarios need a different architecture.
+
+The hot-key problem. If one key gets ten percent of all traffic — a celebrity's profile, today's trending topic — its shard is overwhelmed even when the cluster is otherwise fine. Three solutions. Per-key replication — detect hot keys and replicate them across multiple nodes. Reads spread. Writes still go to the primary. In-process client-side cache — each app server has its own l-r-u cache for the very hottest keys. Cuts the distributed-cache load by an order of magnitude for those keys. Probabilistic refresh — when a t-t-l is about to expire, only one client refreshes. Others use the still-cached value until refreshed. Prevents the thundering herd on expiry.
+
+Cluster resizing. When the cluster grows from twenty to twenty-five nodes. Consistent hashing ensures only one-fifth of keys move. During migration, the new node fetches keys on demand from the old owner — lazy migration — or pre-warms by reading the whole old-owner shard — eager migration. Lazy is simpler. Eager is faster. The client's hash ring is updated atomically when the new node is ready.
+
+Trade-offs and scale. Eviction policy — least-recently-used is the default. Least-frequently-used for skewed access patterns. T-t-l-based eviction is independent of l-r-u or l-f-u and runs in parallel. Persistence — cache nodes typically do not persist. The data is recomputable from the source of truth. Redis has optional persistence for cache-as-data-store use cases. Multi-region — cross-region replication is async only, with conflict resolution by last-write-wins or per-key vector clocks from notebook four. Strong consistency across regions defeats the latency win. Pick the right tool.
+
+The dominant production implementations are Redis Cluster — single-master per shard, async replicas. Memcached plus consistent hashing on the client. And proprietary caches inside Dynamo, Cassandra, and similar.
+
+The throughline.
+
+Eight notebooks of system design vocabulary, and the five case studies above are where the vocabulary becomes the design language. Look back at the five designs and notice how much of the same toolkit appears. Consistent hashing in the rate limiter, the distributed cache, the chat connection directory. At-least-once plus idempotent processing in the rate limiter sync, the message delivery, the click counter. Cache-aside in the you-are-el shortener and as the read path in every other design. Async replication in the cache, the timeline cache, the message store. Fan-out on write versus fan-out on read explicit in the timeline, implicit in chat group delivery. Eventual consistency baked into all five — strong consistency was never the right choice for any of them. And the latency table from notebook one is, in the end, what drove every architectural choice. Caching exists because ram is a thousand times faster than solid-state drive. Content delivery networks exist because cross-continent round-trips are a hundred times longer than same-datacenter. And so on.
+
+The throughline of the series, in one sentence. System design is the discipline of trading the right things for the right things at the right scale. No design is a recipe. Every design is a set of decisions, each justified by numbers and constrained by the laws of distributed systems. The vocabulary lets the trade-offs be discussed. The numbers make them defensible. The operational practices keep them honest.
+
+Build well. Measure honestly. Fail gracefully.
