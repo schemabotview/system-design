@@ -1,5 +1,99 @@
-Distributed systems theory.
+Welcome to notebook four of the system design track. This notebook is the theoretical core of the series. We cover why distributed systems are different from single-process programs, the cap theorem and the common misreadings of it, the consistency models that real systems actually offer, the clocks problem and how Lamport and vector clocks fix it, the consensus protocols Raft and Paxos that let nodes agree on a single answer, and how leader election plays out in practice.
 
-What is covered.
+Why distributed is different.
 
-This notebook is the theoretical core of the series. We cover the cap theorem and the common misreadings of it, the consistency models that real systems actually offer, how Raft and Paxos let nodes agree on a single answer, how Lamport clocks and vector clocks let us reason about order without a shared wall clock, and how leader election plays out in practice.
+A single-process program has a comfortable property. Everything either happened or did not. A function call returns or throws. State is shared coherently in one address space. The see-pee-you's clock advances monotonically. The world is consistent.
+
+The moment you add a network, all of those properties weaken. A request you sent might have succeeded, or failed, or be still in flight. You do not know. State held in one process can diverge from state held in another. Two clocks on two machines do not agree. And — uniquely to distributed systems — you can have partial failure. Half the system works. Half does not. And the half that works has to keep going somehow.
+
+Peter Deutsch's eight fallacies of distributed computing name the assumptions that quietly poison single-machine reasoning when applied to distributed systems. The network is reliable. Latency is zero. Bandwidth is infinite. The network is secure. Topology does not change. There is one administrator. Transport cost is zero. The network is homogeneous. Each of these is almost true on a laptop and plainly false across a fleet of machines. The rest of this notebook is, in one form or another, vocabulary for reasoning about the failure modes those broken assumptions introduce.
+
+Three categories of failures are worth keeping in mind. Crash failures — a node stops responding. Easy to detect by timeouts. Easy to reason about. Most real failures are this. Omission failures — a node responds to some requests but not others. Messages get dropped silently. Harder. Byzantine failures — a node sends wrong answers. Corrupted. Malicious. Buggy. Rare in trusted environments. Common in adversarial ones like cryptocurrencies and public-internet protocols. Most distributed-systems work assumes crash failures. Byzantine fault tolerance is a much harder problem with much higher overhead.
+
+The cap theorem — what it actually says.
+
+Eric Brewer's conjecture, later proved by Gilbert and Lynch, is the most-cited and most-misunderstood result in distributed systems. The precise statement is this. In the presence of a network partition, a distributed data store must choose between consistency and availability.
+
+The misunderstanding is to read it as "pick two of c, a, p". You do not choose p. Partitions happen, whether you want them or not. The real choice the theorem describes is what to do during a partition.
+
+During a partition, you have two options. The first option — see-pee. Favor consistency. If a node cannot reach a quorum, it refuses requests. No stale reads. No conflicting writes. But the system is unavailable from that node's perspective. ZooKeeper, etcd, Spanner, most relational databases under network failure pick this. The second option — ay-pee. Favor availability. Each side of the partition keeps accepting requests, returning whatever it knows locally. The system stays up. But it may serve stale data. And the two sides will diverge until reconciled. Cassandra, DynamoDB, Riak pick this.
+
+A subtle but important point. The c in cap is a specific consistency — linearizability. The strongest possible. It means every read sees the most recent committed write. Weaker consistency models — eventual, causal — are still meaningful during partitions. They just are not what cap's c measures.
+
+The real-world implication is more subtle than "pick see-pee or ay-pee". Most systems are see-pee for some operations and ay-pee for others. A database that is strongly consistent for transactional writes might be eventually consistent for read replicas. The decision is per-workload, not per-system.
+
+Beyond cap — pa-cell-see.
+
+Cap describes behaviour during a network partition. But partitions are rare. The more interesting question for most of the time is — what trade-off does the system make when there is not a partition?
+
+Daniel Abadi's pa-cell-see is the refinement. If a partition, then trade availability or consistency. Else, no partition, trade latency or consistency.
+
+A system can be classified as pee-ay-eee-el — partition-availability, else-latency. Pee-ay-eee-see — partition-availability, else-consistency. Pee-see-eee-el. Or pee-see-eee-see. A few examples. DynamoDB is pee-ay-eee-el. During a partition it prefers availability. Even in normal operation it prefers low latency over strong consistency. Spanner is pee-see-eee-see. Even during a partition it refuses to serve from a minority. In normal operation it gives you strong consistency, accepting the latency cost of cross-region consensus. MongoDB with defaults is pee-ay-eee-see. Available during partition. Strongly consistent linearizable reads from primary in normal operation.
+
+Pa-cell-see is more useful than cap for actual decisions because the partition case is the exception. The steady-state trade-off — the eee-el-see part — is what you live with every day.
+
+Consistency models — the spectrum.
+
+"Consistent" by itself is not a measurement. There are many consistency models, ordered from strongest and most expensive, to weakest and cheapest. A system specifies which model it guarantees. The application has to be designed around what that model does and does not promise.
+
+The hierarchy, strongest first — linearizable, then sequential, then causal, then eventual.
+
+Linearizable consistency. The strongest. Every operation appears to take effect atomically at some point between its start and its end. Operations are ordered by real time. If write w finished before read r started, r sees w, or a later write. This is what most people mean intuitively when they say "the system is consistent". It is also expensive — every operation must coordinate with a quorum across the cluster. ZooKeeper, etcd, Spanner offer this.
+
+Sequential consistency. All nodes see operations in the same order. But that order does not have to match real time. Two writes that happened concurrently can be ordered either way, as long as everyone agrees. Weaker than linearizable — a read can return an older value as long as the order is consistent. Easier to implement. Not commonly offered as a top-line model in modern systems. It is more often a theoretical stepping-stone.
+
+Causal consistency. Operations that are causally related — b happened because of a — are seen in the same order by everyone. Concurrent operations can be seen in different orders. "If I reply to your message, every observer sees your message before my reply". But two unrelated messages can be seen in either order. Causal consistency captures the natural expectation for collaborative apps — chat, comments, shared documents — and is significantly cheaper than linearizable. Used by cops, Bayou, and as a building block in modern systems.
+
+Eventual consistency. The weakest commonly seen. If no new updates are made, eventually all replicas converge to the same value. That is the only guarantee. In between, replicas can disagree arbitrarily. Reads can return stale values. Writes can take seconds to propagate. This is the consistency level of DynamoDB's eventually-consistent reads, Cassandra's default, the domain name system, and most content delivery network caches. It is enormously cheaper than stronger models and is acceptable whenever the application can tolerate a few seconds of staleness.
+
+Which to pick. The honest answer — the weakest one that lets the application be correct. Strong consistency is expensive in latency, in availability, and in dollars. Pay for it where you need it — financial transactions, distributed locks, leader election. Use weaker models where you do not — social feeds, cached lookups, analytics.
+
+Clocks — why wall-clock time is not trustworthy.
+
+Two events happened on two machines. Which came first?
+
+The naive answer is "look at the wall-clock timestamps". This is wrong for three reasons. First — clock skew. Two machines' clocks drift apart by milliseconds to seconds. Network time protocol corrects this periodically, but between corrections clocks can be off by enough to invert event order. A "later" event on machine b may have a smaller timestamp than an "earlier" event on machine a. Second — clock jumps. When network time protocol corrects a clock, it may jump forward or backward. An event with timestamp t can be followed by an event with timestamp t-minus-five-seconds. Third — no global clock. Even Google's TrueTime, which uses gee-pee-ess and atomic clocks, only gives bounded uncertainty — "this event happened between t-one and t-two globally". Without specialized hardware, you have nothing like that.
+
+The fix is not a better physical clock. It is a different kind of clock. Logical clocks measure causality, not real time. Two events that did not influence each other are simply concurrent. The system does not pretend to know which came first.
+
+Lamport clocks. The simplest logical clock. Each node holds a counter l. The rules. Before any event — local or send — increment. l-plus-equals-one. On send, attach the current l to the message. On receive with attached l-msg, update — l equals max of l and l-msg, plus one. If event a happened before event b — b saw a's effect — then l of a is less than l of b. The reverse is not guaranteed. L of a less than l of b does not mean a happened before b. They could be unrelated. Lamport clocks give a partial order on events that captures "could have caused".
+
+Vector clocks. A more informative logical clock. Each node i holds a vector v of counters, one per node. The rules. Before any local event, increment own slot — v of i plus-equals one. On send, attach the current v to the message. On receive with attached v-msg, take pointwise max, then increment own slot.
+
+Comparison. V-one is less-than-or-equal to v-two if every slot in v-one is less than or equal to the corresponding slot in v-two. If v-one is strictly less than v-two, event one happened before event two. If neither is less than or equal to the other, the events are concurrent. And the system can detect that, unlike with Lamport clocks. Vector clocks are the basis of how Dynamo-style systems detect and reconcile conflicting concurrent writes.
+
+The notebook codes both up. The Lamport demo shows three nodes — a, b, c. A sends to b. B sends to c. A's send has counter one. B's receive has counter two. B's send has counter three. C's receive has counter four. The total order respects causality. The vector clock demo shows that when a sends to b, and c does an independent local event at the same time, the vector clock can detect that a-to-b and c's tick are concurrent — no causal relationship between them.
+
+The big picture. Lamport clocks give you a single number you can compare. Useful as a total order in logs and audit trails. But they cannot tell you whether two events were concurrent. Vector clocks can. At the cost of carrying one number per node in every message. Most production systems use Lamport-style hybrid logical clocks that combine physical time with a logical counter, getting the best of both for typical workloads.
+
+Consensus — making nodes agree.
+
+The most fundamental problem in distributed systems. How do n nodes agree on a single value, given that some might fail and the network might drop messages?
+
+This shows up everywhere. Choosing a new leader after the old one crashes. Committing a transaction across replicas. Adding a new node to a cluster. Updating a configuration that everyone needs to see consistently. If you can solve consensus once, you can build almost every distributed-systems primitive on top of it.
+
+The flp impossibility result — Fischer-Lynch-Paterson, nineteen eighty-five — proved that no deterministic consensus protocol can guarantee both safety and liveness in an asynchronous network with even one possible crash failure. Real-world protocols therefore make assumptions — typically that the network is partially synchronous, meaning messages arrive eventually even if late, and that a majority of nodes are up. Under those assumptions, consensus is achievable.
+
+Two protocols dominate the modern landscape. Paxos and Raft.
+
+Raft was designed to be understandable. It was published in twenty fourteen explicitly as "Paxos but understandable". It is now the dominant choice for new systems. Three pieces. First — leader election. Nodes are in one of three states. Follower. Candidate. Leader. When a follower stops hearing from a leader, it becomes a candidate, increments its term — a monotonic election counter — and requests votes. A candidate that gets a majority becomes the leader for that term. Second — log replication. All writes go to the leader. The leader appends to its local log, then sends the entry to followers. Once a majority have written it to their logs, the entry is committed and applied to state machines. Third — safety properties. Two crucial invariants. Leader completeness — the elected leader for term t has every entry committed in any earlier term. Achieved by only voting for candidates whose log is at least as up-to-date as the voter's. Log matching — if two logs have the same entry at the same index, all entries before that index are identical. These invariants combined mean Raft never loses committed data even under arbitrary leader failures.
+
+Paxos is the original. Lamport's Paxos is older — nineteen eighty-nine, formally published nineteen ninety-eight — and has the same guarantees as Raft. The reason Raft exists is that Paxos is famously hard to understand and implement correctly. The original paper required two follow-up papers to clarify it, and a generation of production Paxos implementations had subtle correctness bugs. In modern systems Paxos still appears — Spanner, Chubby — but Raft is dominant for new work. They are equivalent in capability. Pick based on what your team can implement and operate confidently.
+
+What you build on top of consensus. Replicated state machines — every node runs the same operations in the same order, so they all reach the same state. Distributed locks — a leader election is itself a distributed lock. etcd and ZooKeeper expose this directly. Atomic configuration changes — Kubernetes uses etcd, which is Raft-based, for every cluster-state change. Strongly consistent metadata — service discovery, leader registries, feature flags.
+
+Consensus is expensive. Every commit requires a round-trip to a majority. You do not run application writes through Raft. You run coordination writes through it. The application typically uses Raft to elect a leader, then the leader serves application traffic at much higher throughput than raw Raft could.
+
+Leader election — the foundation under failover.
+
+Many of the patterns in the rest of the series — primary failover in databases, single-writer guarantees in queues, exclusive ownership of shards — reduce to "one and only one node is the leader at any time". That requires leader election.
+
+The hard part is preventing two leaders. A split-brain — two nodes both convinced they are the leader — is one of the most damaging failure modes possible. Both write conflicting updates. Both serve clients. Reconciliation is sometimes impossible without data loss.
+
+Three mechanisms, ordered by how reliably they prevent split-brain. First — consensus-based. Raft, Paxos, etcd, ZooKeeper. The leader is elected by majority vote with monotonic terms. A new election always invalidates the previous leader's term. Safe under all failure modes. This is the modern default. If you need leader election, use a system that provides it. Second — lease-based with a strongly consistent store. Leaders hold a time-limited lease in a database or etcd that they renew. If they fail to renew, the lease expires and someone else can take it. Safe if and only if the store providing leases is strongly consistent, and the timing assumptions hold. Third — heartbeat-based with hand-rolled election. Nodes send heartbeats. On missed heartbeats, the survivors hold an ad-hoc election among themselves. Fragile. Network partitions create dual leaders. Deploys race the election. Correctness depends on synchronized clocks. Discouraged in modern designs.
+
+Fencing tokens are a critical defence even with consensus. Every leader is issued a monotonically increasing token. Downstream systems — databases, locks, file systems — record the highest token they have seen and reject operations with older tokens. This guarantees that a deposed leader who did not realize it lost the lease cannot continue to write. Its token is stale. Without fencing tokens, even consensus-based leader election can let zombie leaders cause damage.
+
+The pragmatic recipe for any system needing a leader. Use etcd or ZooKeeper for the election, and use fencing tokens on every operation the leader performs. Do not roll your own.
+
+Notebook five turns to messaging and event-driven architectures — the asynchronous half of distributed systems. Message queues and their delivery guarantees. Publish-subscribe. Event-driven architecture as a system shape. Event sourcing as a way to make state derivable from a log. And command query responsibility segregation as a split-read-and-write pattern. The consistency and consensus vocabulary from this notebook is the foundation those patterns build on.
