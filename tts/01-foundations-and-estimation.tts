@@ -1,5 +1,119 @@
-Foundations and estimation.
+Welcome to the system design track. This is notebook one of eight. Before we get to specific components — load balancers, databases, message queues — we need to lay down the vocabulary and the numbers that every later notebook will lean on. By the end of this session you will know what system design actually means as a discipline, the difference between scaling up and scaling out, the difference between availability, reliability, and durability, the difference between latency and throughput, why p ninety-nine matters more than averages, how to do quick back-of-envelope estimation, and you will have committed the latency numbers every engineer should know to memory.
 
-What is covered.
+What system design is.
 
-This notebook lays the groundwork for the rest of the series — what scalability really means, the difference between availability, reliability, and durability, why latency and throughput are not the same thing, and how to do quick back-of-envelope math on storage and request volume. We close with the latency numbers every engineer should keep in working memory.
+System design is the discipline of designing the structure and behaviour of a software system that has to serve real users at real scale. It is what changes when "the code works on my laptop" stops being the bar.
+
+A useful framing. When you write a function, you optimize for correctness. When you write a service, you optimize for fitness — the system meets its performance, availability, cost, and operability targets under realistic load and realistic failure. Fitness is plural. There is no single right answer. Every decision is a trade-off between competing goals, and the job is to make the trade-offs deliberately rather than by accident.
+
+The vocabulary in this notebook — scalability, availability, latency, capacity — is the language we use to describe those trade-offs precisely. The rest of the series uses this vocabulary constantly. If availability and reliability both mean "the system works" to you right now, this notebook is where we sharpen them.
+
+A short note on style. System design is heavy on numbers and light on code. You will see capacity math in every chapter — bytes per record, queries per second, latency budget, fan-out factor. The numbers anchor decisions. The sentence "use a see-dee-en" is a recipe. The sentence "use a see-dee-en because the round-trip from Mumbai to us-east-one is one hundred fifty milliseconds and our p ninety-nine budget is one hundred milliseconds" is a decision.
+
+Scalability — vertical versus horizontal.
+
+When load grows, you have two options.
+
+Vertical scaling, also called scaling up, means making the existing machine bigger. More see-pee-you cores. More ram. A faster disk. The code does not change. The deployment does not change. You just provision a larger instance.
+
+Horizontal scaling, also called scaling out, means adding more machines. Run the same code on each. Spread requests across them with a load balancer.
+
+Vertical is the path of least resistance. No code changes, no distributed-systems problems. You hit the ceiling fast though. The biggest cloud instance is finite. The price per unit of capacity climbs steeply at the top end. Disk speed plateaus. Cross-numa memory access does not scale linearly. And every workload that runs on one machine has a single failure point — when that machine reboots, your service is down.
+
+Horizontal scaling has no ceiling but pays a price. State becomes the hard problem. Stateless services scale horizontally cheaply. Every request can land on any machine. Stateful services — your database, your cache, your session store — need to share state somehow, and the rest of this series is partly the story of how. Sharding, replication, consensus, eventual consistency — all of these exist to support horizontal scale of stateful systems.
+
+The pragmatic rule of thumb. Scale vertically until it hurts, then scale horizontally. A small service running on a four-core virtual machine at thirty percent see-pee-you utilization should not be sharded. You would inherit distributed-systems complexity for no benefit. A service whose see-pee-you pegs at peak load should add machines, not size them up indefinitely.
+
+Three properties that get confused — availability, reliability, durability.
+
+These three are confused constantly. They measure different things.
+
+Availability is the percentage of time the system responds to requests. A service that is up but returning h-t-t-p five hundred errors to every request is not available. A service that is up and returning h-t-t-p two hundreds to every request is fully available.
+
+Common availability targets are written in "nines". Two nines is ninety-nine percent — three and a half days of downtime per year. Three nines is ninety-nine point nine percent — eight and a half hours of downtime per year. Four nines is ninety-nine point nine nine percent — fifty-two minutes per year. Five nines is ninety-nine point nine nine nine percent — five minutes per year. Five nines is the standard target for telecom-grade infrastructure. Most web services target three or four. Each additional nine costs roughly an order of magnitude more, because the cheap failures — single virtual machine crash, deploy gone wrong — are handled at three nines. The rare failures — datacenter outage, network partition — only matter at four-plus.
+
+Reliability is the probability that the system behaves correctly over a given time window. Availability is "the system responded". Reliability is "the response was right". A service that incorrectly applies a hundred-dollar charge to ten thousand customers is available — it responded — but unreliable — it was wrong. Reliability is measured by mean time between failures, or by error rate.
+
+Durability is the probability that data survives over a given time window. Amazon s-three famously advertises eleven nines of durability — that is ninety-nine point nine, nine more times. Meaning if you store ten million objects, on average you would lose one every ten thousand years. Durability is achieved by replication and erasure coding. The more redundant copies, the higher the durability.
+
+You can have any combination of these three. A service can be highly available but unreliable — responds fast, gives wrong answers. Or reliable but unavailable — gives perfect answers, but only when it is up, and it is not up. A database can be highly durable — your data never disappears — but low-availability — the database might be unreachable while the data sits safely on disk.
+
+Latency versus throughput.
+
+Two properties of any pipeline. Often confused. They are not the same.
+
+Latency is the time a single request takes from start to finish. Measured in milliseconds. Smaller is better.
+
+Throughput is the number of requests the system can handle per unit time. Measured in queries per second or in bytes per second. Larger is better.
+
+The highway analogy makes the distinction concrete. Latency is the time for one car to drive from point a to point b — say, an hour at sixty miles per hour for sixty miles. Throughput is how many cars per hour the highway delivers — say, a thousand cars per hour at full capacity. Adding lanes raises throughput without changing the single-car latency. Raising the speed limit lowers latency without changing the throughput, if cars are spaced the same. They are two independent dials.
+
+For a real service, the relationship is subtler. As you push more requests per second through a fixed capacity, individual requests start queueing. They wait their turn for see-pee-you, for a connection, for a disk seek. Adding capacity often raises throughput at the cost of latency, because each request has more queueing in front of it. Conversely, parallelizing a single request across many workers lowers its latency at the cost of throughput, because the workers are now spread thin.
+
+The two questions to ask about any system. How fast is a single request? That is latency. How many can we handle at once? That is throughput. Most performance work targets one or the other, not both at once.
+
+Tail latency — why p fifty is a lie.
+
+The phrase "the system has one hundred millisecond latency" is almost always a lie of omission. What does "one hundred millisecond latency" mean? The average? The median? The slowest one percent?
+
+Latency is distributed, not single-valued. You report it as percentiles. p fifty is the median — half of requests are faster than this, half are slower. p ninety-five — ninety-five percent of requests are faster. The slowest five percent are slower. p ninety-nine — ninety-nine percent of requests are faster. One in a hundred is slower. p ninety-nine point nine, called "three-nines latency" — one in a thousand is slower than this.
+
+Why percentiles instead of averages. Because latency distributions are heavy-tailed. A small number of slow requests can drag the mean way above the median. A service with a ten millisecond median latency might have a two hundred millisecond p ninety-nine. The typical request is fast. But one in a hundred is twenty times slower.
+
+The high percentiles are what users actually feel. If your service makes ten downstream calls to render a single page, the page's latency is roughly the worst of those ten calls — which is well-approximated by the p ninety of any one call. Ten calls means the user effectively experiences the p ninety of every call. Make a hundred calls and you are effectively experiencing the p ninety-nine every time.
+
+Tail latency is what your system actually delivers to the slowest one percent of users. And that one percent is loud, repeat customers, and the ones writing support tickets. Most modern services define their service level objectives — s-l-os — in terms of p ninety-nine or p ninety-nine point nine, not average.
+
+Back-of-envelope estimation.
+
+Before designing a system, do the math. A few quick calculations rule out architectures that cannot possibly work, validate that simpler ones might, and anchor the decisions that follow.
+
+The four numbers you usually need. Active users — daily or monthly. Twitter has roughly two hundred fifty million daily active users. A startup has fifty. Action rate — requests per active user per day. A social-feed user might generate five hundred requests per day across all their browsing. Payload size — bytes per request, bytes per record. A tweet is roughly two hundred eighty bytes raw. A tweet object with metadata is roughly one to two kilobytes. Time window — over a day, a month, a year.
+
+Multiply through. Storage equals users times records-per-user times bytes-per-record. Bandwidth equals requests-per-second times bytes-per-response. Queries per second equals total requests divided by seconds in the window.
+
+Two shortcuts that save constant arithmetic. There are eighty-six thousand four hundred seconds in a day. Often rounded to one hundred thousand for quick math. And — one million requests per day equals approximately twelve queries per second. Useful for translating "we have one hundred million requests a day" into roughly one thousand two hundred queries per second average. Peak queries per second is typically two to three times the average.
+
+A worked example. A chat app with ten million daily active users, each sending twenty messages per day at an average of two hundred bytes per message. Daily messages — ten million times twenty equals two hundred million per day. Average queries per second — two hundred million divided by eighty-six thousand four hundred is about two thousand three hundred. Peak — roughly three times that, about seven thousand queries per second. Daily ingest — two hundred million messages times two hundred bytes is forty gigabytes per day. One year — forty gigabytes times three hundred sixty-five is about fifteen terabytes. Five years — about seventy-three terabytes.
+
+That single calculation rules out architectures that store every message in memory — too expensive — and validates that a sharded relational database with cold-storage offload is plausible. We have not designed anything yet, but we have narrowed the search.
+
+The notebook codes this up as a small set of helper functions. Daily queries per second, peak queries per second, daily bytes, yearly bytes, and a humanize-bytes function that converts raw byte counts into the nearest unit. Running the helpers on the chat-app numbers reproduces the worked example.
+
+Latency numbers every engineer should know.
+
+The single most useful table in system design. These are the numbers Jeff Dean famously published in twenty ten, updated for twenty twenty-five-era hardware. The exact values shift year to year. The ratios are stable. Internalize the orders of magnitude.
+
+A level-one cache reference takes one nanosecond. A level-two cache reference takes four nanoseconds. A mutex lock and unlock when uncontended takes seventeen nanoseconds. A main memory reference — a fetch from dee-ram after a level-three cache miss — takes one hundred nanoseconds. Sending one kilobyte over a one-gigabit network takes ten microseconds — that is wire time only. Reading four kilobytes from an n-v-m-e solid-state drive takes one hundred fifty microseconds. Reading one megabyte sequentially from memory takes three microseconds. Reading one megabyte sequentially from a solid-state drive takes one millisecond. A round-trip between two hosts in the same datacenter takes five hundred microseconds — half a millisecond. A disk seek on a spinning hard disk takes ten milliseconds. A round-trip across a continent — say new york to san francisco — takes forty milliseconds. A round-trip across the world — say Mumbai to us-east-one — takes one hundred fifty milliseconds.
+
+A few rules of thumb fall out of this table. Level-one cache to main memory is one hundred times. A cache miss costs the time of a hundred cache hits. Memory to solid-state drive is a thousand times. A disk read costs the time of a thousand memory reads. Solid-state drive to spinning disk is one hundred times. Spinning disks are dead for hot data — solid-state everywhere. Same-datacenter round-trip to cross-continent is one hundred times. Geography is the dominant latency cost on the open internet. Cross-continent to cross-world is four times. Once you have left your datacenter, every hop is expensive.
+
+These numbers explain why caching exists — ram is a thousand times faster than solid-state drive. Why content delivery networks exist — cross-continent round-trips are unaffordable for static content. Why connection pooling matters — tee-el-ess handshakes cost multiple round-trips. And why batching wins — per-call overhead dominates for small operations.
+
+Designing for the numbers.
+
+A few concrete examples of how the latency table shapes architecture.
+
+Why caching exists. A web request that hits the database makes a half-millisecond to two-millisecond call. The same request served from an in-process cache is roughly one hundred nanoseconds — five orders of magnitude faster. Even a Redis cache on the same network — sub-millisecond — is five to ten times faster than a sequel query. Caching trades correctness — the cache may be stale — for latency. The decision to cache anything is the decision to accept some staleness in exchange for that thousand-times speedup.
+
+Why content delivery networks exist. A user in Mumbai hitting a server in Virginia pays one hundred fifty milliseconds just for the network round-trip, before any compute happens. A content delivery network with a point of presence in Mumbai serves the cached content in five to ten milliseconds. For static assets — images, javascript, c-s-s — the staleness is acceptable and the latency win is enormous.
+
+Why batching wins. If you need to read one hundred keys from a database, doing one hundred separate queries costs roughly one hundred times the sum of round-trip and query time. Doing one query with a where-key-in clause costs roughly one round-trip plus the database's batch-processing time. The round-trip cost is usually ten to one hundred times larger than the per-key compute cost, so batching is almost always a win.
+
+Why connection pooling matters. A new tee-see-pee connection costs three round-trips before any data flows. A new tee-el-ess connection costs another round-trip or two for the handshake. On a cross-datacenter link, that is two hundred milliseconds or more of overhead per request, just to open the connection. A connection pool reuses live connections, amortizing that cost across thousands of requests.
+
+The pattern. When you see a system-design recommendation that does not make sense on its face, the latency table usually explains it.
+
+Capacity planning versus load testing.
+
+Two ways to know whether your system will hold up. Both are necessary.
+
+Capacity planning is the forward calculation. Start from expected traffic, multiply through the dependency graph, and arrive at required hardware. Example. We expect ten thousand queries per second peak, each request fans out to three service calls, each call needs fifty milliseconds of see-pee-you, so we need ten thousand times three times zero-point-zero-five — that is one thousand five hundred see-pee-you-seconds per second, divided by seventy percent utilization target — so about twenty-one cores. Capacity planning catches architectural problems. Fan-out factors you forgot. Payloads that are larger than budgeted. Indexes you will need at scale.
+
+Load testing is the empirical measurement. Run real load against a real or near-real system and observe what breaks. Load testing catches operational problems. Connection limits. Thread-pool starvation. Garbage collector pauses. The specific moment when latency goes from acceptable to terrible.
+
+The two complement each other. Capacity planning is forward-looking. It tells you what to build. Load testing is backward-validating. It tells you whether what you built actually behaves as planned. Skip capacity planning and you design the wrong system. Skip load testing and you ship the system without knowing where it breaks.
+
+A common mistake is to load-test only the steady state. The interesting failures happen at the edges. When load suddenly doubles. When one dependency starts slowing down. When a single hot key floods one shard. Load tests should include traffic spikes, dependency degradation, and skewed key distributions, not just constant uniform load.
+
+Notebook two turns to networking and edge. The path a request takes from the user's browser to your servers and back. Domain name resolution. Content delivery networks. Load balancers at layer four and layer seven. Representational state transfer versus gee-are-pee-see versus graph-q-l. Rate limiting. These are the components that sit between your users and your services, and the latency numbers from this notebook are the budget every one of them has to fit into.
