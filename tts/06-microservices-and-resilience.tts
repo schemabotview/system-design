@@ -1,5 +1,121 @@
-Microservices and resilience.
+Welcome to notebook six of the system design track. This notebook covers the architectural style most large systems land in, and the resilience patterns that keep it standing. We start with the real trade-offs between a monolith and microservices. Then walk through the gateway and service mesh that wire services together. The saga pattern for transactions that cross service boundaries. And the resilience trio — circuit breaker, bulkhead, and idempotent retries — that lets a microservice mesh stay up when its parts do not.
 
-What is covered.
+Monolith versus microservices — the real trade-off.
 
-This notebook covers the architectural style most large systems land in, and the resilience patterns that keep it standing. We start with the real trade-offs between a monolith and microservices, then walk through the gateway and service mesh that wire services together, the saga pattern for transactions that cross service boundaries, and the resilience trio — circuit breaker, bulkhead, and idempotent retries.
+A monolith is one deployable unit running all of the application's code in one process. A microservices architecture splits the application into many small services, each independently deployed, communicating over the network.
+
+The framing "monolith bad, microservices good" is wrong. Both are valid architectural choices that trade different costs.
+
+Monolith wins. One deployable — build, test, deploy is one pipeline. One process to operate. One log to read. In-process calls are free — no network hop, no serialization, no marshalling. Function call latency is nanoseconds. Transactional consistency — a single database transaction can span the whole codebase. Cross-module operations are atomic for free. Easier refactoring — moving code between modules is just git move. No coordination with other teams. Easier debugging — one stack trace, one process to attach a debugger to.
+
+Microservices wins. Independent deployment — teams can ship at their own cadence without waiting for the rest of the system. Independent scaling — the image-resize service can run on twenty machines while the user-profile service runs on two. Technology diversity — one service in Python for machine learning, another in Go for performance, another in Rust for safety. Each team picks the right tool. Failure isolation — a bug in the recommendation engine does not crash the checkout service. Org alignment — services map to teams. Each team owns its services end-to-end.
+
+The microservices tax. Network failures everywhere — every cross-service call can fail, time out, or return a partial result. The application code has to handle this. Distributed transactions — what was one acid transaction in a monolith is now a saga across services, which we cover below. Observability is harder — a user request fans out across ten services. Following it requires distributed tracing. Latency is higher — even sub-millisecond network calls add up. A chain of ten sequential calls can blow a one-hundred-millisecond budget. Operational cost — each service needs its own deploy pipeline, monitoring, on-call rotation, runbook.
+
+The honest decision rule. Start with a monolith. Split off a service when the cost of keeping it in the monolith exceeds the cost of running it as a service. That cost is usually about team independence. When two teams keep stepping on each other in the same codebase, splitting is a relief. It is almost never about technical scalability. A well-built monolith on modern hardware can handle tens of thousands of queries per second.
+
+Conway's law is the silent driver. Organizations design systems that mirror their communication structure. A monolith works when one team owns it. Microservices work when each service has one team. When the team structure changes faster than the architecture catches up, the architecture starts fighting the org chart, and refactors are the consequence.
+
+Application programming interface gateway — one front door.
+
+When you have many backend services, the client — browser, mobile app, partner — should not know about all of them. The ay-pee-eye gateway is a single h-t-t-p-s endpoint that fronts the entire service fleet. Clients call the gateway. The gateway routes to the right backend.
+
+What the gateway does. Routing — slash users slash anything goes to the user service. Slash orders to the order service. Authentication and authorization — verify the json web token or session, attach the user identity to downstream calls, reject unauthorized requests at the edge. Rate limiting — per ay-pee-eye-key, per-user, per-endpoint quotas enforced centrally. Request and response transformation — hide backend protocols. Rewrite a rest call into gee-are-pee-see. Translate jay-son shapes. tee-el-ess termination — backend services can speak plain h-t-t-p behind the gateway. Aggregation — one gateway request can fan out to multiple backends and combine the results. Common in backend-for-frontend patterns. Versioning — route slash v-one slash users and slash v-two slash users to different backends.
+
+The trade-off. The gateway is a critical single point of dependency. Every external request goes through it. It must be highly available, highly performant, and operated to a higher standard than any backend service. Pin too much logic in the gateway and it becomes a god service that no one wants to deploy. Pin too little and you lose the centralization benefits.
+
+Common implementations. a-w-s ay-pee-eye Gateway. Google Cloud Endpoints. Kong. Tyk. Envoy with Istio config. Nginx. Cloudflare's gateway products.
+
+A useful split. The gateway handles concerns about how clients talk to you — auth, rate limit, routing, tee-el-ess. Backend services handle concerns about what your business does. Anything that is business logic does not belong in the gateway.
+
+Service mesh — wiring service-to-service traffic.
+
+The ay-pee-eye gateway sits between clients and your services. The service mesh sits between your services.
+
+A service mesh installs a small proxy — a sidecar — alongside every service instance. All inter-service traffic flows through the sidecar instead of going directly. The sidecar handles cross-cutting concerns the same way for every service in the mesh, regardless of language. Mutual tee-el-ess between services without each service implementing tee-el-ess. Retries, timeouts, circuit breakers without each service implementing them. Routing rules — canary deployments, traffic splitting for experiments. Observability — metrics, traces, logs — emitted uniformly from every sidecar. Service discovery without service code knowing about it.
+
+The control plane — Istio, Linkerd's control plane, Consul Connect — distributes configuration to all the sidecars. The data plane — Envoy as the sidecar in the case of Istio, Linkerd's own proxy in Linkerd's case — handles the actual traffic.
+
+The win. Application code stays simple. The service just makes plain h-t-t-p calls. The sidecar enforces all the resilience policy, observability, and security. Policies are uniform. No service can "forget" to retry with backoff, because the sidecar does it.
+
+The cost. The mesh is a substantial operational system in its own right. Sidecars consume see-pee-you and memory per pod. The control plane is a critical dependency. Many teams that adopted Istio in twenty eighteen to twenty twenty ultimately rolled it back as the complexity outweighed the benefits.
+
+The honest take. Service mesh earns its keep at significant scale — hundreds of services, multi-team org — where the alternative is bespoke libraries in every language. At smaller scale, a shared library or framework — a "thick client" pattern — often beats the mesh on operational simplicity.
+
+The saga pattern — distributed transactions.
+
+In a monolith, multi-step business operations live in a single acid transaction. Either all the steps commit, or all roll back. In microservices, each service owns its own database. Cross-service acid is not possible without two-phase commit, which has known availability problems and is rarely used in modern systems.
+
+The saga pattern is the alternative. A multi-step operation is modeled as a sequence of local transactions in different services, with compensating actions for each step that can roll it back if a later step fails.
+
+A worked example — placing an order. Step one — the order service creates the order. Its compensating action is to cancel the order. Step two — the inventory service reserves items. Its compensating action is to release the reservation. Step three — the payment service charges the card. Its compensating action is to refund the card. Step four — the shipping service schedules the shipment. Its compensating action is to cancel the shipment.
+
+If step three fails — the card is declined — the saga runs the compensating actions for steps one and two in reverse. Release the reservation. Cancel the order. The card was never charged, so step three has nothing to compensate.
+
+Two coordination styles. Orchestration — a central coordinator, the saga orchestrator, issues commands to each service in turn and listens for replies. On failure, the orchestrator runs the compensations. Easy to reason about. The workflow lives in one place. Choreography — no coordinator. Each service publishes events when it completes. Other services subscribe and act. The order service publishes "order created". The inventory service listens, reserves, and publishes "items reserved". And so on. Looser coupling. Harder to debug because the workflow is implicit.
+
+Two important caveats. Sagas are not acid. They are eventually consistent. Between steps, the system can observe partial state — an order exists but is not paid for yet, for a few seconds. The application has to be designed for this. And compensations are not undo. They are a new transaction that conceptually reverses the effect of the original. You cannot uncharge a credit card. You can issue a refund. Some things genuinely cannot be compensated — an email already sent. Saga design has to acknowledge what is compensatable and what is not.
+
+The pragmatic rule. If your operation truly requires acid across services, you either need to combine those services back into one, or use distributed sequel like Spanner or CockroachDB and keep them strongly consistent, or accept saga's eventual consistency and design the user experience around it. Two-phase commit across services is almost never the right answer in modern systems.
+
+Circuit breaker — failing fast.
+
+When a downstream service is failing — timing out, returning errors, taking ten seconds per call — the worst thing your service can do is keep calling it. Every call ties up a connection, a thread, a memory buffer. Soon your service is unhealthy too. Not because it broke, but because it is queued behind a broken dependency.
+
+The circuit breaker pattern detects when a downstream is failing and stops calling it for a cooldown period. Calls fail immediately with a known error instead of timing out. This frees your service's resources and prevents cascading failure.
+
+A circuit breaker has three states. Closed — normal. Calls pass through. Track success and failure rate. Open — the failure threshold has been exceeded. All calls fail immediately without touching the downstream. Wait for the cooldown period. Half-open — after cooldown, allow a few probe calls through. If they succeed, close the circuit. If they fail, open it again.
+
+The threshold is usually defined by a window — last n calls or last t seconds. Common defaults — fifty percent error rate over a ten-second window opens the circuit. Cooldown thirty seconds. One to three probe calls in half-open.
+
+The notebook example codes up a circuit breaker with a threshold of three consecutive failures and a half-second cooldown. The downstream is failing for the first five calls and then recovers. The first three calls go through and all fail — and the third one trips the breaker into open. Calls four through six are short-circuited immediately without touching the downstream. After the cooldown, the next call is a probe — and because the downstream is still failing at that point, the breaker re-opens. The pattern is clear. The breaker absorbs the damage to your service while the downstream is broken.
+
+The circuit-breaker pattern usually ships as a library or sidecar concern, not application code. Resilience-four-j on the java virtual machine, py-breaker in Python, Polly on dot-net, and every service mesh — Istio, Linkerd — implement it. The library handles the state machine. The application just wraps calls in a breaker dot execute block.
+
+Bulkhead — isolating failure.
+
+Named after the watertight compartments in a ship's hull that prevent a single hole from sinking the whole vessel, the bulkhead pattern isolates resources so a failure in one part of the system does not drain resources from the rest.
+
+The motivating failure. A web server has a thread pool of one hundred threads. Three downstream services — a, b, and c — are called from different endpoints. Service a starts taking ten seconds per request. Within minutes, all one hundred threads are stuck waiting on a. Now endpoints that call b and c also fail, because there are no free threads. The slow service has consumed the shared resource and starved the others.
+
+The fix. Allocate separate thread pools, or connection pools, or semaphores, per downstream. Thirty threads for a, thirty for b, thirty for c, ten reserved. Now a's slowness only consumes a's allotted threads. B and c continue serving. A's clients see slower responses or timeouts. B's and c's clients are unaffected.
+
+Where bulkheads show up in practice. Thread or connection pools per dependency — the most common form. Separate process pools for high-risk versus low-risk operations — p-d-f generation in its own pool so a bad p-d-f does not out-of-memory the ay-pee-eye server. Tenant isolation — in a multi-tenant system, dedicate resources per tenant or per priority tier so one tenant's bug does not degrade everyone. Async with bounded queues — each background-job type has its own queue. One job type's slowness does not back up the others.
+
+The cost. Resources are not fungible across bulkheads, so total utilization is lower. With one shared pool of one hundred threads you could serve one hundred fast requests at once. With three pools of thirty each, you can serve at most thirty of any one type even if the other pools are idle. That is the deliberate trade-off. Slightly less efficient in the happy path. Much more resilient in the unhappy path.
+
+Bulkhead plus circuit breaker is the standard pair. Bulkhead isolates the resource damage. Circuit breaker stops calling the broken downstream entirely. Together they prevent most cascading failures.
+
+Idempotency and safe retries.
+
+Networks drop packets. Services restart mid-request. Timeouts fire when the request actually succeeded. In a distributed system, retries are inevitable. And retries without care are how systems take themselves down.
+
+Three forces shape safe retry design.
+
+Idempotency. A request is idempotent if making it twice has the same effect as making it once. Put slash users slash forty-two slash name equals alice is idempotent. Repeated execution leaves the same end state. Post slash orders slash charge is not idempotent by default. Repeated execution charges the card twice.
+
+For non-idempotent operations, the standard pattern is an idempotency key. The client generates a unique identifier per logical operation. The server records the key alongside the result. On retry with the same key, the server returns the recorded result instead of re-executing. Stripe's ay-pee-eye is the canonical example.
+
+Exponential backoff. If you retry immediately, you flood the recovering downstream and prevent it from catching up. Exponential backoff doubles the wait between retries. One hundred milliseconds. Two hundred. Four hundred. Eight hundred. Capped at some maximum. Recovering downstreams get a chance to actually recover.
+
+Jitter. Without jitter, every client retries at the same intervals — the "thundering herd" — slamming the downstream just as it tries to recover. Add randomness. Sleep some random fraction of the backoff window. Full jitter — sleep is uniform from zero to backoff — is the standard recommendation. It spreads retries across the recovery window.
+
+The combined recipe — idempotent operation with exponential backoff and full jitter — is the foundation under every cloud software development kit, every well-built ay-pee-eye client, and every retry library worth using.
+
+The notebook codes up a retry helper with this pattern. It calls a function that succeeds on the fourth try. The helper retries three times, with jittered sleeps growing exponentially, and returns success on the fourth call. A second demonstration samples the jittered sleep times for ten parallel clients — they spread roughly uniformly across the eight-hundred-millisecond backoff window, which is exactly what avoids the thundering herd.
+
+Two important caveats. Do not retry everything. Distinguish transient errors — timeouts, five-oh-threes, connection refused — from permanent ones — four hundred bad request, four oh four not found, four oh three forbidden. Retrying a four hundred does not make it less four hundred. It just wastes resources. Build a retry policy that retries the transient class and surfaces the permanent class immediately.
+
+And watch out for retry storms across the stack. If service a retries five times into service b, which retries five times into service c, a single c failure produces twenty-five calls to c from one user request. Do not double-retry up the stack. Pick the layer at which retries happen and do not retry above it.
+
+Putting it together — the resilience stack.
+
+The resilience patterns combine into a standard recipe for every outbound service call in a microservices system. First — timeout. Give up before holding the connection too long. Second — retry. Handle transient failures with backoff and jitter. Third — circuit breaker. Stop calling a downstream that is broken. Fourth — bulkhead. Isolate resources so failure does not spread. Fifth — fallback. Return a degraded result, not a hard error.
+
+A typical outbound call wraps in all five. Timeout fires at two hundred milliseconds. Retry kicks in two or three times with exponential backoff and jitter for transient failures. Circuit breaker monitors the rolling failure rate. Opens if greater than fifty percent in the last ten seconds. Refuses calls for thirty seconds. Bulkhead limits this dependency to its own pool of n threads or connections. Fallback returns a cached value, a default, or a graceful error message when the call fails.
+
+In a service mesh, the first four layers live in the sidecar. The service just sees "this call failed" and applies the fallback. Without a mesh, a resilience library — Resilience-four-j, Polly, tenacity plus py-breaker — provides the building blocks.
+
+The honest framing. None of these patterns is exotic. Each is a small piece of code. The skill is applying them consistently across every outbound call in the system, and not relying on them to mask design problems. A circuit breaker around a downstream that fails five percent of the time hides a five-percent-failure-rate downstream from your dashboards. The breaker is treating the symptom. Fix the downstream.
+
+Notebook seven turns to operations and reliability — the day-to-day work that decides whether a well-designed system actually stays up. Observability — metrics, logs, and traces — and the three pillars of "what is the system doing?". Deployment strategies — blue-green, canary, rolling — and how to ship without taking traffic down. Failure modes, graceful degradation, and load shedding. The patterns from this notebook tell you what to build. The patterns in notebook seven tell you how to run it.
