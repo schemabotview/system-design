@@ -1,5 +1,107 @@
-Messaging and event-driven architectures.
+Welcome to notebook five of the system design track. This notebook covers the asynchronous half of distributed systems. Message queues and their delivery guarantees. Publish-subscribe. Event-driven architecture as a system shape. Event sourcing as a way to make state derivable from a log. And command query responsibility segregation as a split-read-and-write pattern. We close with a quick tour of the dominant brokers and what each one fits.
 
-What is covered.
+Why asynchronous communication.
 
-This notebook covers the asynchronous side of distributed systems — message queues and their delivery guarantees, the publish-subscribe model, what it means to organize a whole system around events rather than requests, event sourcing as a way to make state derivable from a log, and command query responsibility segregation as a split-read-and-write pattern.
+Synchronous calls — request, response, over h-t-t-p, gee-are-pee-see, or a direct database call — are the easy default. The caller blocks. The server processes. The response comes back. The dependency graph is explicit and easy to reason about.
+
+It breaks down at scale in three predictable ways. Coupling — service a directly calls service b which calls c which calls d. If d is slow or down, a is slow or down. Latency budgets compound. Failures cascade. Back-pressure — a spike in incoming load floods downstream services that cannot keep up. The whole chain slows or fails together, often with retry storms making it worse. Fan-out — when one event needs to trigger five different reactions, synchronous orchestration means the originating call waits for all five to finish.
+
+Asynchronous messaging breaks the synchronous coupling. The producer drops a message on a queue or a topic and moves on. Consumers pick up messages at their own pace. A slow consumer falls behind. The queue absorbs the burst. A failed consumer eventually catches up after restarting. The producer does not know — or care — who is consuming.
+
+The trade-off is real. You lose immediacy. The producer does not know when, or whether, the consumer succeeded. And you take on the operational burden of running a message broker. Async is the right tool when the work can wait. When multiple consumers care about the same event. Or when the rate of incoming work does not match the rate of processing. It is overkill when a simple synchronous call suffices.
+
+Message queues — the basic primitive.
+
+A message queue is an ordered, durable buffer of messages. Producers append. Consumers read. The queue lives on a broker — Kafka, RabbitMQ, Amazon s-q-s, Pulsar — that handles persistence, replication, and delivery.
+
+The defining property of a queue, as opposed to a topic, is point-to-point delivery. Each message is processed by exactly one consumer. Multiple consumers can read from the same queue. The broker distributes messages across them. It does not duplicate.
+
+The three delivery guarantees every messaging system has to choose among.
+
+At-most-once. The broker delivers each message zero or one times. Lost messages stay lost. Cheapest. Used when occasional data loss is acceptable — metrics, debug logs, click events for aggregate analytics.
+
+At-least-once. The broker delivers each message one or more times. No message is lost, but some might be delivered twice or more due to consumer crashes between processing and acknowledging. The consumer must be idempotent. Processing the same message twice must produce the same result as processing it once. This is the most common guarantee in production. Almost every modern broker offers it as the default. The trade-off — duplicates instead of losses — is usually the right one, because idempotency is achievable in code, while data loss is not recoverable.
+
+Exactly-once. The broker delivers each message exactly once. No duplicates, no losses. The grail. In a strict sense, exactly-once delivery is impossible across an unreliable network. You cannot tell whether your acknowledgment was lost or the message was never received without an extra round-trip. In practice, modern brokers approximate it with transactional writes — the consumer's processing and its acknowledgment are wrapped in a transaction that either both succeed or both fail. Kafka's exactly-once semantics works this way, with significant performance cost.
+
+For most workloads, at-least-once plus idempotent consumers is the practical sweet spot. Same end-to-end guarantees as exactly-once. No broker-side complexity.
+
+The notebook shows the difference in code. A naive consumer that simply credits funds when it receives a message ends up crediting Alice two hundred when the message is redelivered after a simulated crash. An idempotent consumer that tracks processed message identifiers stays at one hundred, because the redelivery is detected as a duplicate and short-circuited.
+
+The pattern generalizes. Store the processed message identifier alongside the state change, in the same transaction. On redelivery, the consumer sees the identifier was already processed and skips. The deduplication store can be a database table, Redis, or a built-in feature of the broker. Kafka's consumer offsets work this way.
+
+Publish-subscribe — fan-out beyond queues.
+
+A queue gives you point-to-point delivery. Each message goes to one consumer. Publish-subscribe gives you fan-out. Each message goes to every subscriber.
+
+The vocabulary shifts. Producers publish to topics. Consumers subscribe to topics. The broker holds one logical message per publication and delivers it to every subscriber.
+
+Two flavours in modern systems. Broadcast topics — every subscriber gets every message. Used for events that any number of services might care about, like "user signed up", "order completed", "deploy started". Consumer groups — a topic has multiple subscriber groups. Within a group, messages are partitioned across instances like a queue. But between groups, every message is delivered to each group. Lets one event feed both a "send welcome email" service — one instance per group consumes one event — and an "update analytics" service — its own group, also consumes every event. Kafka, Pulsar, and Kinesis all use this model.
+
+Publish-subscribe versus message queue is often a false dichotomy in modern brokers. Kafka topics with one consumer group behave like queues. With multiple groups they behave like publish-subscribe. RabbitMQ has both queues and exchanges — its publish-subscribe primitive — and lets you compose them. Amazon s-q-s is queue-only. Amazon s-n-s is publish-subscribe. a-w-s users commonly fan out s-n-s to multiple s-q-s queues to get both behaviours.
+
+The decoupling win is the real reason to reach for publish-subscribe. The producer does not know what services consume its events. New consumers can be added without touching the producer. Old consumers can be removed without coordination. The topic is the contract. And the contract is just "events of shape x arrive here".
+
+Event-driven architecture as a system shape.
+
+A messaging system can be a transport — a way to ship work from a to b asynchronously — or it can be the organizing principle of the whole system. The latter is event-driven architecture.
+
+In an event-driven system, events are the source of truth. When something happens in the domain — order placed, payment received, inventory reserved — the service responsible publishes an event. Other services react to it. There is no orchestrating coordinator. The dependency graph is implicit in who subscribes to what.
+
+Two flavours. Event notification — the event is a thin "something happened" signal. Subscribers fetch details from the producer if they need them. Loose coupling at the cost of follow-up reads. Event-carried state transfer — the event carries enough detail that subscribers can act without fetching anything else. Tighter coupling to the event schema, but faster reactions and resilience to producer downtime.
+
+The wins of event-driven over orchestrated synchronous flows. Loose coupling — producers do not know consumers. Resilience — a slow or down consumer does not break the producer. Events queue up and are processed when the consumer recovers. Auditability — the event log is a record of everything that happened in the domain. Extremely valuable for debugging, compliance, and replaying state. Extensibility — new consumers can be added without touching existing services.
+
+The costs. Eventual consistency by construction. A subscriber's view of the world lags the producer by however long event delivery and processing takes. Application code must be written to expect this. Debugging is harder — a single user action triggers a chain of events that fans across services. Distributed tracing becomes essential. We cover this in notebook seven. Schema evolution is harder — events outlive code. An event in your log written six months ago must still be readable today. Schema-registry tools and versioning conventions exist to manage this.
+
+When to reach for event-driven. When the domain is naturally event-shaped — things happen, multiple parties care, the chain of reactions is open-ended. e-commerce flows. Supply chains. Financial transactions. Multi-step workflows. When not to — simple c-r-u-d apps. Two-service systems. Anywhere a synchronous request fits the mental model of the user action.
+
+Event sourcing — state as a function of events.
+
+Most systems store current state in a database. The user's address is "one twenty-three Main Street" because that is what is in the users-dot-address column. If they update it, the column is overwritten. The old value is lost, unless a separate audit log captures it.
+
+Event sourcing inverts this. The system stores the sequence of events that happened. State is derived by replaying the events. The user's address is the result of folding "user created" then "address changed to one twenty-three Main Street" over time. If they update it, a new "address changed" event is appended. The derived state changes. Nothing is overwritten.
+
+The benefits are real. Full audit trail — every change is preserved. You can answer "what did the system look like on march fifth" by replaying events up to that date. Temporal queries — "how many times did this user change their email" is just a count over the event log. Bug fix replay — a bug in projection logic that miscalculated balances for two months can be fixed by replaying events through the corrected logic. The source of truth is intact. Multiple projections — the same events can produce different views. A normalized sequel table for transactional reads. A denormalized search index for full-text. A graph database for relationship queries. Each is a projection.
+
+The costs. Querying current state is no longer a simple select. You need a materialized view — a projection — of the events into a queryable shape. Maintaining projections is its own subsystem. Schema evolution is harder. Old events must remain readable forever. You cannot just drop a field. The mental model is different. Developers used to "write current state, read current state" need to learn "publish events, subscribe to events, build projections".
+
+Event sourcing pairs naturally with event-driven architecture but is independent of it. You can use event sourcing inside a single service, just for that service's local state, without exposing events to others.
+
+Command query responsibility segregation, called see-cue-are-ess.
+
+See-cue-are-ess is the architectural pattern of separating the write side — commands that change state — from the read side — queries that observe state — into different models, often different data stores.
+
+The motivation. Reads and writes have very different requirements in many systems. Writes need strong consistency and transactional integrity, but are usually low-volume. Reads are typically much higher volume, and need to be fast, but can tolerate eventual consistency.
+
+If you serve both from the same normalized relational schema, you are optimizing for neither. See-cue-are-ess lets you write to a strongly consistent transactional store and project to multiple read-optimized stores. Denormalized sequel views. Search indexes. Graph stores. In-memory caches. Each tuned for a specific query pattern.
+
+See-cue-are-ess pairs especially well with event sourcing because the event log is a natural source for projections. Each projection is a consumer of the event log, building its own read-optimized view. Adding a new query pattern is adding a new projection. Rebuilding a projection is replaying the events.
+
+The trade-offs. Reads are now eventually consistent. A write that just succeeded may not be visible on the read side for some milliseconds to seconds. The application must be designed for this. More moving parts — projections to maintain, event log to operate, dual paths to test. Operational complexity — catching up a projection from cold can take hours for a high-volume system. You need to think about projection bootstrapping carefully.
+
+See-cue-are-ess without event sourcing is also possible. Write to a normalized database. Project to denormalized views via change-data-capture. This is the more common variant. Full event-sourced see-cue-are-ess is reserved for systems that genuinely benefit from the event log as the source of truth.
+
+The dominant implementations.
+
+A short tour of the brokers you will encounter.
+
+Kafka — a distributed commit log. Strengths — high throughput, durable, replayable, large ecosystem including Connect and Streams, good for event sourcing. Weaknesses — operational complexity. Ordering is per-partition only, not global.
+
+RabbitMQ — advanced message queueing protocol queues plus exchanges. Strengths — flexible routing, low-latency point-to-point. Weaknesses — lower per-broker throughput. Message store can grow without bound.
+
+Amazon s-q-s — managed queue. Strengths — zero operations, scales automatically, integrates with Lambda. Weaknesses — messages capped at one megabyte. No built-in topic-style fan-out — use s-n-s. At-least-once only.
+
+Amazon s-n-s — managed publish-subscribe. Strengths — fan-out, integrates with s-q-s, Lambda, and h-t-t-p. Weaknesses — no ordering guarantees in standard topics.
+
+Pulsar — hybrid log plus queue. Strengths — geo-replication, multi-tenancy, decoupled compute and storage. Weaknesses — smaller ecosystem than Kafka.
+
+Google Pub-Sub — managed publish-subscribe. Strengths — global ordering, exactly-once support, Spanner-backed. Weaknesses — gee-see-pee only.
+
+Redis Streams — in-memory log. Strengths — sub-millisecond latency, simple operations. Weaknesses — less durable than disk-backed brokers. Bounded by ram.
+
+Picking one. For event-sourced systems and high-throughput pipelines — Kafka or Pulsar. For traditional task queues and rich routing — RabbitMQ or s-q-s. For managed everything in a cloud — s-q-s plus s-n-s on a-w-s, or Pub-Sub on gee-see-pee. For sub-millisecond fan-out within a single cluster — Redis Streams.
+
+The most common mistake is picking the most powerful broker for a workload that does not need it. Kafka is overkill for a service-to-service task queue with a few thousand messages per second. Amazon s-q-s would be a much better fit operationally. Match the broker's complexity to the problem's complexity.
+
+Notebook six turns to microservices and resilience. The architectural style most large systems land in, and the resilience patterns that keep it standing. Monolith versus microservices and the real trade-offs. ay-pee-eye gateway and service mesh as the wiring layer. The saga pattern for transactions that span services. And the resilience trio — circuit breaker, bulkhead, idempotent retries — that lets a microservice mesh stay up when its parts do not.
