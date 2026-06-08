@@ -1,5 +1,129 @@
-Databases and storage.
+Welcome to notebook three of the system design track. This notebook covers the storage layer underneath every service. When a relational database is the right call versus when a no-sequel store fits better. How the common index structures — bee-tree, hash, and log-structured-merge-tree — work under the hood. How data is replicated across machines for read scale and fault tolerance. How sharding splits data across nodes. And the caching strategies that sit in front of all of it.
 
-What is covered.
+The storage layer.
 
-This notebook covers the storage layer — when a relational database is the right call versus when a no-sequel store fits better, how the common index structures work under the hood, how data is replicated across machines for read scale and fault tolerance, how sharding splits data across nodes, and the caching strategies that sit in front of it all.
+Every non-trivial service has a persistence layer underneath it. The choices made here shape almost every other choice that follows. How the service scales. How it fails. How fast it serves a request. How much it costs to run. The wrong storage decision is one of the most expensive mistakes to reverse, because by the time you discover it you usually have a few terabytes of data and a few hundred services depending on its schema.
+
+Three forces shape the choice. The access pattern — do you do lookups by primary key, range scans, joins, aggregations, full-text search. The consistency requirements — does the application need strict transactional guarantees, or can it tolerate eventual consistency in exchange for better availability or latency. And the scale shape — how big is the data, how fast does it grow, is the bottleneck reads, writes, or storage volume.
+
+The classical split is relational, that is sequel, versus non-relational, that is no-sequel. But that frames the choice too coarsely. Modern systems usually pick a storage engine per workload. Relational for the transactional core. A search index for full-text. A key-value store for sessions. A time-series store for metrics. We will walk each family.
+
+Relational stores — sequel.
+
+The relational model. Data lives in tables, with rows and columns. Rows reference each other by foreign keys. The query language — sequel — lets you join, filter, group, and aggregate declaratively. You say what you want. The engine figures out how.
+
+What relational stores are good at. Joins — combining data from multiple tables in one query is the relational model's home turf. No-sequel stores can join, but usually awkwardly. acid transactions — atomicity, consistency, isolation, durability — the four guarantees that let business logic treat a sequence of writes as one unit. Either all of it happened, or none of it did. Schema enforcement — columns have types. Constraints reject bad data at the boundary. The database refuses to let you write a-b-c into an integer column. Mature tooling — forty years of indexing strategies, query planners, replication tooling, backup tooling.
+
+Where relational stores hurt. Horizontal scale of writes — sharding a relational database is operationally painful. Schema changes have to fan out, cross-shard joins become impossible, acid cannot span shards without distributed transactions. Schema rigidity — adding a column to a hundred-million-row table can lock writes for hours unless you have an online-schema-change tool. Flexible documents — storing a deeply nested jay-son-shaped object in a relational schema means either denormalizing into many tables or using a jay-son column, which most relational databases now support, blurring the line.
+
+Examples. Postgres and MySequel are the open-source workhorses. Sequel Server and Oracle are the enterprise standards. CockroachDB and Spanner are distributed sequel — they keep the relational model but scale horizontally with consensus-replicated shards.
+
+Non-relational stores — the four families.
+
+"No-sequel" is a misleading umbrella. It covers four very different families. Each one made specific trade-offs to escape a specific limitation of the relational model.
+
+Key-value stores. The simplest model. A hash map. Set a value at a key. Get it back later. No queries, no joins, no schema. Examples — Redis, Memcached, DynamoDB at its core, etcd, Consul. Strengths — sub-millisecond reads, simple horizontal scale by hashing the key and routing to the shard, trivial to reason about. Use cases — session storage, caching, leader election, configuration storage.
+
+Document stores. Values are structured documents — jay-son or b-son, usually with arbitrary nesting. You query by primary key or by indexes on document fields. Examples — MongoDB, Couchbase, Firestore, DynamoDB with its document model. Strengths — schema flexibility, since there is no migration to add a field. A natural fit for object-shaped data. Horizontal scaling. Use cases — content management, product catalogs, mobile app backends, anywhere the data shape varies across records or evolves quickly.
+
+Column-family stores, also called wide-column stores. Data is stored by column rather than by row. A row can have a different set of columns than its neighbours. Optimized for very high write throughput and for queries that touch a few columns across many rows. Examples — Cassandra, ScyllaDB, h-base, Bigtable. Strengths — linear horizontal scale of writes, tunable consistency per query, very high throughput. Use cases — time-series data, event logs, analytics ingestion, very-high-write workloads where the cost of a relational system would be prohibitive.
+
+Graph stores. Data is nodes and edges. Queries traverse the graph rather than joining tables. Examples — Neo-four-j, Amazon Neptune, TigerGraph, JanusGraph. Strengths — multi-hop traversals are cheap because the graph is the index. Naturally expresses relationships. Use cases — social networks, recommendation engines, fraud detection, anywhere "who is connected to whom" is the central question.
+
+Sequel versus no-sequel — picking.
+
+A practical decision framework rather than a religious war.
+
+I have rich relationships between entities and need to join across them — relational. I need acid transactions across multiple records — relational, or distributed sequel like Spanner or CockroachDB. My data is naturally a tree of nested fields and the shape varies per record — document. I need sub-millisecond reads on simple lookups at any scale — key-value. I am writing tens of thousands of records per second and rarely deleting — column-family. My queries are about traversing relationships, not aggregating values — graph. I need full-text search with ranking — a specialized search index like Elasticsearch or OpenSearch. I have time-series metrics with high write volume and time-based aggregation — a time-series database like InfluxDB, TimescaleDB, or Prometheus.
+
+The honest answer for most early-stage applications. Start with a relational store. It is the most flexible default. The data model can evolve as you learn what the application actually does. Move parts of the workload to a specialized store when the relational store is provably the bottleneck. Not before.
+
+The danger of over-specializing too early. You end up with five storage systems for fifty thousand requests per second. Each with its own operational burden. None of them under serious load. Better one boring database under control than five exotic ones in flames.
+
+Indexes — why queries do not scan everything.
+
+Without an index, finding select-star-from-users-where-email-equals-x requires reading every row in the table — a full table scan. For a billion-row table, that is terabytes of input-output for one query.
+
+An index is a separate data structure that maps from a search key to row locations, letting the database jump straight to the rows it needs. The trade-off. Indexes cost storage and slow down writes — every insert or update touches the index too. Read speed is bought with write cost and disk space.
+
+Three index structures dominate.
+
+Bee-tree, and its variant bee-plus-tree. The classical relational-database index. A balanced tree where each node holds a sorted range of keys and pointers to children. Lookups walk from root to leaf in logarithmic time — typically three to five levels deep even for billion-row tables, because each node fans out to a hundred to five hundred children. Strengths — range scans like where-x-between-ten-and-twenty, ordered iteration, prefix matching. Cost — modest write amplification. Each insert rebalances at most a few nodes. Used by Postgres, MySequel InnoDB, Sequel Server, virtually every relational engine.
+
+Hash index. A hash table from key to row location. Constant-time lookups. But no order — range scans do not work. Strengths — equality lookups are even faster than bee-tree, especially in memory. Cost — no range scans, no prefix matching, susceptible to rebuild on resize. Used by in-memory stores like Redis, and some specialized indexes in relational databases.
+
+Log-structured merge tree, called the el-ess-em tree. A write-optimized structure. New writes land in an in-memory buffer. Periodically the buffer is sorted and flushed to disk as a sorted-string table, or ess-ess-table. Multiple ess-ess-tables accumulate, and a background compaction process merges them into fewer, larger files. Strengths — writes are sequential — append-only — which is enormously faster than random writes on solid-state and spinning disks. High write throughput. Cost — reads may have to check several ess-ess-tables, which is mitigated by bloom filters. Compaction consumes see-pee-you and input-output continuously. Tail-latency spikes during major compactions. Used by Cassandra, RocksDB, LevelDB, Bigtable, h-base, BigQuery's storage, modern column-family stores.
+
+The pattern. If your workload is read-heavy with mixed equality and range queries, bee-tree wins. If it is equality-only and latency-critical, hash. If it is write-heavy and you can absorb compaction cost in the background, el-ess-em. Most real systems use multiple index structures for different workloads.
+
+Replication — multiple copies of the data.
+
+A single database server has two problems. It is a single point of failure. And it is a single point of capacity for reads. Replication copies the data to multiple servers, giving you both fault tolerance and read scale.
+
+Leader-follower, also called primary-replica. The dominant pattern. One node is the leader. All writes go to it. Writes are then replicated to one or more followers. Reads can go to the leader or to any follower.
+
+Two questions to ask about any leader-follower setup. First — synchronous or asynchronous replication. Synchronous — the leader waits for at least one follower to acknowledge the write before returning success. The follower is guaranteed to have the write. If the leader fails immediately after, no data is lost. But the write latency includes the round-trip to the follower, and if the follower is slow or down, writes block. Asynchronous — the leader returns success immediately and ships the write to followers in the background. Fast and resilient. But if the leader fails before a write reaches the followers, that write is lost. Real systems often use semi-synchronous — wait for at least one follower, but no more — to balance the two.
+
+Second — how does failover work? When the leader fails, one of the followers must become the new leader. This requires detecting the failure quickly without false positives. Picking the most up-to-date follower. And reconfiguring clients to talk to the new leader. Modern systems automate this with consensus protocols — Raft and Paxos — covered in notebook four. Hand-rolled failover is a frequent source of split-brain incidents.
+
+Multi-leader and leaderless. Two patterns that drop the single leader.
+
+Multi-leader. Multiple nodes accept writes. Each leader replicates to the others. Used in multi-region setups where each region has its own leader to keep write latency low. The hard problem — conflicts. Two regions write to the same row at the same time. Which wins? Solutions range from last-write-wins, which is lossy, to conflict-free replicated data types, which mathematically merge, to application-level conflict resolution, where the application picks.
+
+Leaderless. Any node can accept any write or read. Writes are sent to n nodes. Reads query n nodes and reconcile. The Dynamo paper introduced this style, and Cassandra, ScyllaDB, and Riak follow it. Tunable consistency — pick how many writes, called w, and reads, called r, must succeed. As long as w plus r is greater than n, you get a guaranteed read of the latest write.
+
+The trade-offs around all of these — what is lost, what is preserved, what is eventually consistent — are the subject of notebook four. For now — single-leader, semi-sync, automated failover is the default for most workloads, and you should only move off it when you have a specific reason.
+
+Sharding — splitting data across machines.
+
+Replication scales reads but not writes. Every write still goes to the single leader. To scale writes, you have to split the data itself across multiple machines. That is sharding, also called horizontal partitioning.
+
+Each shard holds a subset of rows. A row's shard is decided by its partition key. Queries routed by partition key go straight to the relevant shard. Queries that span partition keys touch multiple shards and have to aggregate.
+
+Three sharding strategies.
+
+Range-based sharding. Partition key ranges map to shards. Shard one holds keys a to h. Shard two holds i to p. Shard three holds q to z. Strengths — range scans are localized. Scanning where-key-between-c-and-e touches one shard. Weakness — hot spots. If keys cluster — timestamps, sequential identifiers — one shard takes all the writes. The classic disaster pattern. Used by h-base, MongoDB's range-sharded option, Bigtable.
+
+Hash-based sharding. Hash the partition key, take modulo or use consistent hashing, route to that shard. Distribution is uniform regardless of key skew. Strengths — even load distribution. Weakness — range scans require touching every shard. Used by Cassandra, DynamoDB's default, most key-value stores.
+
+Geo-based sharding. Shard by user region. eee-you users on eee-you shards. you-ess users on you-ess shards. Reduces cross-region latency and helps with data-residency regulations like gee-dee-pee-are. Strengths — local reads and writes are fast, regulatory alignment. Weakness — uneven shard sizes because regions are not equally popular. Cross-region operations — a user moving regions, a global aggregation — become expensive. Used by most globally distributed user-facing services.
+
+The hardest problem in sharding is resharding. When a shard gets too big, you have to split it. Moving data without downtime. Updating routing without race conditions. Keeping clients pointed at the right place. Consistent hashing from notebook two makes this much less painful by only moving one-over-n of keys per shard change. Modern sharded systems also use virtual shards — many more logical shards than physical machines — so growing the cluster is a remapping of virtual-to-physical, not a data move.
+
+The honest progression. Start single-node. When that hurts, add replication for read scale. When writes hurt, shard. Each step adds operational complexity. Do not take them speculatively.
+
+Caching — where it sits and what it costs.
+
+A cache is a fast, lossy store in front of a slower authoritative store. The cache hit is cheap — microseconds. The cache miss falls back to the authoritative store — milliseconds — and writes the value back.
+
+Where caches sit. The browser cache — on the user's machine. Free. Controlled by h-t-t-p headers. The content-delivery-network cache — at edge points of presence. Covered in notebook two. The reverse-proxy cache — Varnish, nginx in front of your app. Caches whole h-t-t-p responses keyed by u-r-l. The in-process cache — a hash map in your application's memory. Fastest possible. Per-server, so not shared. The distributed cache — Redis, Memcached. Shared across your fleet, sub-millisecond reads. The database query cache — the database remembers the result of recent queries. Less common today. Most engines have backed off this in favour of plan caches.
+
+The four canonical caching strategies for the application-to-cache-to-database path.
+
+Cache-aside, also called lazy loading. The application is in charge. On read, check the cache. On miss, load from the database and populate the cache. On write, update the database and invalidate the cache. The default for most applications. Simple. Application is in control. Easy to add to existing code.
+
+Read-through. The cache wraps the database. The application only talks to the cache. On miss, the cache itself fetches and populates. When you want a cleaner abstraction and the cache library supports it.
+
+Write-through. On write, the application writes to the cache. The cache synchronously writes to the database. Cache and database stay in lockstep. When consistency between cache and database matters more than write latency, and you can absorb the synchronous database write.
+
+Write-behind, also called write-back. The application writes to the cache only. The cache flushes to the database asynchronously in the background. Very fast writes. But data can be lost if the cache fails before flushing. Used in metrics and analytics pipelines, not in transactional systems.
+
+The notebook example builds tiny versions of all four. The cache-aside read demo shows that five reads of the same key trigger one database read and four cache hits. The write-behind demo shows that one hundred writes can complete without the database seeing any of them until the flush — fast for the application, but the data is at risk until that flush completes.
+
+Cache invalidation — the hard problem.
+
+Phil Karlton's quip — there are only two hard things in computer science, cache invalidation and naming things — is half a joke and half deadly serious. Stale caches cause some of the worst bugs in production. Data that should have changed did not. Transactions appear to roll back. Users see other users' data.
+
+Three approaches to keeping caches fresh.
+
+Time-to-live expiry. Every cached entry has a t-t-l. After the t-t-l, the entry is treated as missing and re-fetched. Simple. Stale data lives for at most t-t-l seconds — which may be seconds or hours depending on what trade-off you want.
+
+Explicit invalidation. On every write that changes the underlying data, send a delete to the cache for the affected keys. Fast freshness. Easy to forget for a write path you did not think of, which means the cache silently goes stale and you do not know.
+
+Versioned keys. Change the cache key when the underlying data changes. User-forty-two-version-seventeen instead of just user-forty-two. Old keys are never re-read because no one knows their name. New keys are populated on demand. The same trick content delivery networks use for asset versioning.
+
+Cache invalidation across services is harder. If service a writes to the database, and service b has a cache of derived data, b needs to know to invalidate. Three mechanisms — change-data-capture, where a's database emits a stream of changes and b subscribes. Event bus, where a publishes a user-updated event and b subscribes. Or a shared invalidation channel, where a explicitly publishes a cache invalidation message. We come back to all three in notebook five.
+
+The pragmatic rule. If staleness for a few seconds is acceptable, prefer t-t-l. It is the simplest mental model and the least error-prone. Use explicit invalidation only when the freshness budget is tighter than a t-t-l allows. And pair it with monitoring on cache hit rates and on data divergence between cache and source.
+
+Notebook four turns to distributed systems theory — the conceptual core of the series. The cap theorem and what it really says, and what it does not. The consistency models that real systems actually offer — strong, eventual, causal. The consensus protocols — Raft and Paxos — that let nodes agree on a single answer. Lamport clocks and vector clocks for reasoning about order without a shared wall clock. And leader election. After this notebook, the trade-offs in replication, sharding, and messaging all come from one consistent vocabulary.
