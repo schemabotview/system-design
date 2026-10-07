@@ -4,5 +4,6 @@
   "networking": "System Design Networking and APIs",
   "storage": "System Design Data Storage",
   "distributed": "System Design Distributed Systems",
-  "scaling": "System Design Scaling Patterns"
+  "scaling": "System Design Scaling Patterns",
+  "architecture": "System Design Architecture and Services"
 }
