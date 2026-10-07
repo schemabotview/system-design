@@ -1,0 +1,4 @@
+{
+  "_comment": "Curated publish titles (YouTube title + thumbnail header) per course, keyed by course id. An override for the registry's in-app course.title.",
+  "foundations": "System Design Foundations"
+}

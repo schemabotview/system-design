@@ -1,0 +1,10 @@
+/* System Design's design surface — the three tokens @graphlearning/shell leaves to the repo.
+   Imported AFTER the shell's stylesheet in main.tsx, so these win the cascade.
+
+   Teal as the brand (blueprint / schematic), amber as the counter tone: the cool-structure /
+   warm-trade-off pairing the course itself is about. */
+:root {
+  --brand: #3fb6a8; /* blueprint teal */
+  --brand-hover: #6fd3c6; /* lighter teal — the eyebrow's hover state */
+  --accent-2: #f2b84b; /* amber — the slide's `###` subheading */
+}
