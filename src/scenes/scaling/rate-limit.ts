@@ -36,6 +36,10 @@ export const sdRateLimit: Scene = {
       card('dist', 'Distributed limiting', 'external', ['Shared counter in Redis: atomic INCR / Lua', 'Or split the limit across nodes locally', 'Trade accuracy against a network hop']),
       card('quota', 'Quotas', 'service', ['Long-horizon budgets: per day, per month', 'Rate limit protects capacity; quota protects the business']),
     ]),
+    row('sd-rate-limit-put', 'Putting it to work', [
+      card('sd-rate-limit-w', 'Worked example & failure', 'service', ['Fixed 100/min: 100 at :59 + 100 at :00 = 200 in 2 s', 'Central counter = a hop per request; local-only limits drift apart', 'Shared Redis counter ≈ 100K ops/s per node; local shares drift when load is uneven']),
+      card('sd-rate-limit-t', 'Your turn', 'external', ['Bucket 5/s, burst 10: 10 instant requests, then when is the next allowed?', 'Design: public API limits and headers']),
+    ]),
   ],
   edges: [],
 }

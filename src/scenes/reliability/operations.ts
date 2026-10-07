@@ -33,6 +33,10 @@ export const sdOperations: Scene = {
       card('cfg', 'Configuration management', 'warn', ['Config as code: reviewed, versioned', 'Roll out gradually — bad config is a top cause of outages']),
       card('cap', 'Capacity management', 'service', ['Forecast, load-test, keep headroom', 'Know the limit before traffic finds it']),
     ]),
+    row('sd-operations-put', 'Putting it to work', [
+      card('sd-operations-w', 'Worked example & failure', 'service', ['10× traffic: DB reads 2.9K → 29K/s at 95% hits, but 348K/s at 40% — 120×, 23× the DB\'s limit', 'A cache-key change + retry storm + a saturated pool']),
+      card('sd-operations-t', 'Your turn', 'external', ['10× traffic, hit ratio restored to 95%: read replicas needed at 15K/s each?', 'Design: capacity and load-shedding plan']),
+    ]),
   ],
   edges: [],
 }

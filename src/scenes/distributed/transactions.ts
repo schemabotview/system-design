@@ -46,6 +46,10 @@ export const sdTransactions: Scene = {
       card('outbox', 'Transactional outbox', 'warn', ['Write the row and an event row in ONE local tx', 'A relay publishes the event afterwards', 'No “committed but never published”']),
       card('ec', 'Eventual consistency', 'external', ['Between saga steps, state is partial', 'Design the UI and invariants for it']),
     ]),
+    row('sd-transactions-put', 'Putting it to work', [
+      card('sd-transactions-w', 'Worked example & failure', 'service', ['2PC needs all participants up: 3 × 99.9% → 99.7%; locks held while blocked', 'Saga fails at ship → run refund, then release stock; a compensation can fail too']),
+      card('sd-transactions-t', 'Your turn', 'external', ['Trip booking: flight, hotel, car — compensations, and if one fails?', 'Design: place-order flow; outbox schema']),
+    ]),
   ],
   edges: [],
 }

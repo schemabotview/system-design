@@ -43,10 +43,12 @@ export const sdCap: Scene = {
     row('choice', 'The only choice a partition leaves', [
       card('cp', 'Choose consistency (CP)', 'network', ['B refuses or errors', 'Never returns x = 0', 'Unavailable on the minority side']),
       card('ap', 'Choose availability (AP)', 'external', ['B answers x = 0', 'Both sides keep accepting writes', 'Must reconcile when the link heals']),
+      card('sd-cap-w', 'Worked example & failure', 'service', ['Bank balance: refuse rather than lie (CP). Shopping cart: accept both sides, merge (AP)', 'Misreading CAP as "pick two" or "C means ACID"; assuming you must choose all the time']),
     ]),
     row('notes', 'Reading CAP correctly', [
       card('mis', 'Common misconceptions', 'warn', ['Not “pick any two”: partitions happen, so it is C or A', 'Only about behaviour during a partition', 'C means linearizability, not ACID', 'A means every live node answers, not high uptime']),
       card('pacelc', 'PACELC', 'service', ['If Partition: Availability or Consistency', 'Else: Latency or Consistency', 'Even healthy, strong consistency costs round trips', 'e.g. Cassandra PA/EL · Spanner PC/EC']),
+      card('sd-cap-t', 'Your turn', 'external', ['CP or AP: ATM withdrawal · like counter · last item in stock · DNS', 'Design: PACELC stance for catalog browsing vs checkout']),
     ]),
   ],
   edges: [],

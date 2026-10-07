@@ -41,6 +41,10 @@ export const sdRelational: Scene = {
       card('i', 'Isolation', 'network', ['Concurrent transactions don’t see halves', 'Read committed → serializable']),
       card('d', 'Durability', 'storage', ['Committed = survives a crash', 'Write-ahead log flushed before COMMIT returns']),
     ]),
+    row('sd-relational-put', 'Putting it to work', [
+      card('sd-relational-w', 'Worked example & failure', 'service', ['Transfer: debit, crash, no credit → atomicity rolls both back', 'Commit waits for the log flush (~1 ms) → group commit', 'Lost update at read committed; missing index → full scan']),
+      card('sd-relational-t', 'Your turn', 'external', ['Two concurrent withdrawals of 80 from a balance of 100: what goes wrong, and the fix?', 'Design: isolation for seat booking']),
+    ]),
   ],
   edges: [],
 }

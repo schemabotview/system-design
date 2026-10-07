@@ -53,6 +53,10 @@ export const sdFromAccess: Scene = {
       card('skew', 'Read/write skew', 'service', ['Ratio decides which side to optimise', 'Hot vs cold data decides what to cache']),
       card('q', 'One table per query', 'network', ['A lookup shape → a key', 'Duplicate rather than join on the hot path']),
     ]),
+    row('sd-from-access-put', 'Putting it to work', [
+      card('sd-from-access-w', 'Worked example & failure', 'service', ['URL shortener: create + resolve → lookup by code only → key-value; 40 w/s, 400 r/s → app + KV + cache', '"Use Kafka and Cassandra" first; ignoring read/write skew and hot data', 'Traffic 23K writes/s (116K peak), reads 5× — only then: gateway, queue, wide-column store, cache']),
+      card('sd-from-access-t', 'Your turn', 'external', ['Derive the components for autocomplete', 'Design: derive a news feed from its access patterns']),
+    ]),
   ],
   edges: [],
 }

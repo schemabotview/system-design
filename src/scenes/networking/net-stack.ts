@@ -10,7 +10,7 @@ export const sdNetStack: Scene = {
   nodes: [
     {
       id: 'open',
-      label: 'Opening a connection to api.example.com',
+      label: 'Connection establishment: opening a connection to api.example.com',
       pattern: 'network',
       icon: 'network',
       flow: 'LR',
@@ -34,6 +34,10 @@ export const sdNetStack: Scene = {
     row('layer-b', 'Naming and trust', [
       card('dnsc', 'DNS', 'network', ['Hierarchy: root → .com → example.com', 'Answers cached for a TTL at every layer', 'Records: A, AAAA, CNAME, NS']),
       card('tlsc', 'TLS', 'external', ['Encrypts, proves the server’s identity, detects tampering', 'TLS 1.3 = 1 round trip; resumed sessions can send 0-RTT data']),
+    ]),
+    row('sd-net-stack-put', 'Putting it to work', [
+      card('sd-net-stack-w', 'Worked example & failure', 'service', ['RTT 50 ms: DNS 20 + TCP 50 + TLS 50 + request 50 = 170 ms; reused: 50 ms', 'Long DNS TTL slows failover; no connect timeout hangs callers; one TCP loss stalls the stream']),
+      card('sd-net-stack-t', 'Your turn', 'external', ['RTT 80 ms, DNS cached, new TLS 1.3 connection: time to first response?', 'Design: protocol for a live video call vs a bank transfer']),
     ]),
   ],
   edges: [],

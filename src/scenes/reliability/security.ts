@@ -37,6 +37,10 @@ export const sdSecurity: Scene = {
       card('sec', 'Secrets', 'external', ['Never in code or git', 'A secrets manager; rotate; short-lived']),
       card('zt', 'Zero trust', 'warn', ['No trust from network location', 'Authenticate every request; mTLS between services']),
     ]),
+    row('sd-security-put', 'Putting it to work', [
+      card('sd-security-w', 'Worked example & failure', 'service', ['Access token 15 min + refresh token: a leak is a 15-min window, not forever', 'Keys in git; IAM policy ; tokens in browser storage readable by XSS', '401 = unknown caller · 403 = known, not allowed']),
+      card('sd-security-t', 'Your turn', 'external', ['401 or 403: no token · valid token, no permission?', 'Design: access model for an admin panel']),
+    ]),
   ],
   edges: [],
 }

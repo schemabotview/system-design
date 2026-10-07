@@ -21,6 +21,9 @@ export const sdDefense: Scene = {
       card('k', 'What consistency exists?', 'warn', ['Per operation, in words a user would use', 'Where it is weaker, and why']),
       card('m', 'What does it cost?', 'service', ['Compute, storage, bandwidth, people', 'The cheaper design and what it would give up']),
     ]),
+    row('sd-defense-put', 'Putting it to work', [
+      card('sd-defense-t', 'Your turn', 'external', ['Defend the payment system on all seven', 'Design: write a one-page defence of your chosen case']),
+    ]),
   ],
   edges: [],
 }

@@ -1,4 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
+import { card, row } from '../kit'
 
 // §1.6 — scale up is one box that gets bigger; scale out is a stateless tier behind a balancer with
 // the state pushed out to a shared store. The thing to see: in the right-hand band the servers hold
@@ -89,6 +90,10 @@ export const sdScaling: Scene = {
       ],
       edges: [],
     },
+    row('sd-scaling-put', 'Putting it to work', [
+      card('sd-scaling-w', 'Worked example & failure', 'service', ['Capacity planning: 58K ÷ (2K × 60%) → 49 servers; survive a zone loss → 75', 'Sticky sessions + scale-in = lost logins; a shared DB caps everything', 'Amdahl: 100 machines at 5% serial give only ~17×']),
+      card('sd-scaling-t', 'Your turn', 'external', ['21K req/s, 3K/server, 70% target?', 'Design: scale an in-memory-session login']),
+    ]),
   ],
   edges: [],
 }

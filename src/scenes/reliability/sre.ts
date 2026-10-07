@@ -33,6 +33,10 @@ export const sdSre: Scene = {
       card('inc', 'Incident management', 'network', ['Roles: commander, ops, comms', 'Severity levels set the response', 'Mitigate first, diagnose later']),
       card('pm', 'Postmortems', 'external', ['Blameless: fix systems, not people', 'Timeline, causes, contributing factors', 'Actions with owners and dates']),
     ]),
+    row('sd-sre-put', 'Putting it to work', [
+      card('sd-sre-w', 'Worked example & failure', 'service', ['99.9% → 43.2 min / 30 days; 99.99% → 4.3 min. 14.4× burn for 1 h = 2% of the month', '100% SLO: no change allowed, no budget; blame-based reviews hide causes']),
+      card('sd-sre-t', 'Your turn', 'external', ['SLO 99.9% on 10M requests: how many bad requests are allowed?', 'Design: SLOs for the checkout API']),
+    ]),
   ],
   edges: [],
 }

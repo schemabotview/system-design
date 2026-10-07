@@ -34,6 +34,10 @@ export const sdIndexing: Scene = {
       card('qp', 'Query planning', 'external', ['The planner costs plans from table statistics', 'EXPLAIN shows the choice; stale stats mislead it']),
       card('rw', 'Read/write trade-off', 'warn', ['Every index speeds reads, slows every write', 'Plus disk and memory', 'Index the queries you actually run']),
     ]),
+    row('sd-indexing-put', 'Putting it to work', [
+      card('sd-indexing-w', 'Worked example & failure', 'service', ['1B rows: B-tree 4 page reads vs scanning 100 GB ≈ 100 s', 'Wrong column order, stale statistics, five indexes on a hot write path']),
+      card('sd-indexing-t', 'Your turn', 'external', ['Index for WHERE status=\'open\' ORDER BY created_at? Does (a, b) serve WHERE b=5?', 'Design: indexes for 3 queries on posts']),
+    ]),
   ],
   edges: [],
 }

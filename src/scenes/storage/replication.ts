@@ -45,6 +45,10 @@ export const sdReplication: Scene = {
       card('rr', 'Read replicas', 'network', ['Scale reads, not writes', '58K reads/s ÷ 15K per node = 4 replicas']),
       card('fo', 'Failover', 'warn', ['Detect → promote → repoint', 'Async: the newest writes can be lost', 'Two leaders at once = split brain']),
     ]),
+    row('sd-replication-put', 'Putting it to work', [
+      card('sd-replication-w', 'Worked example & failure', 'service', ['58K reads/s ÷ 15K/node → 4 read replicas', 'Post then refresh, and it is missing: read your own writes from the leader', 'Async failover loses the newest writes; two leaders = split brain']),
+      card('sd-replication-t', 'Your turn', 'external', ['N = 5: do W = 3, R = 3 and W = 2, R = 2 guarantee fresh reads?', 'Design: failover for zero data loss vs 1 s']),
+    ]),
   ],
   edges: [],
 }

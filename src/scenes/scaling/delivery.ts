@@ -32,6 +32,10 @@ export const sdDelivery: Scene = {
       card('src', 'Where duplicates come from', 'service', ['Producer retry after a lost ack', 'Consumer crash before ack', 'Rebalance mid-processing']),
       card('dd', 'Deduplication', 'storage', ['Key: message id or a natural key', 'Keep ids for a bounded window', '10M/day × 7 days × 16 B ≈ 1.1 GB']),
     ]),
+    row('sd-delivery-put', 'Putting it to work', [
+      card('sd-delivery-w', 'Worked example & failure', 'service', ['1% redelivery on 100K/s = 1,000 duplicates/s; an undeduped counter is 1% high', '10M/day × 7 days × 16 B ≈ 1.1 GB of dedupe ids']),
+      card('sd-delivery-t', 'Your turn', 'external', ['Semantics for: metrics counter · payment · welcome email', 'Design: where the dedupe record lives, and how long']),
+    ]),
   ],
   edges: [],
 }

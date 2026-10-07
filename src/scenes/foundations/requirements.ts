@@ -1,4 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
+import { card, row } from '../kit'
 
 // §1.2 — five kinds of statement converge on a prioritised set. Explicit ones are given (solid
 // edges); implicit ones and assumptions are FOUND, so their edges are dashed. The last card is the
@@ -6,7 +7,7 @@ import type { Scene } from '@graphlearning/flow'
 export const sdRequirements: Scene = {
   id: 'sd-requirements',
   padding: 0.12,
-  flow: 'LR',
+  flow: 'TB',
   framed: true,
   nodes: [
     {
@@ -47,7 +48,7 @@ export const sdRequirements: Scene = {
     {
       id: 'prio',
       kind: 'list',
-      label: 'Prioritisation · MoSCoW',
+      label: 'Requirement prioritization · MoSCoW',
       pattern: 'service',
       items: [
         'Must: upload, follow, feed',
@@ -57,6 +58,16 @@ export const sdRequirements: Scene = {
         'Dominant NFR: feed latency under read-heavy load',
       ],
     },
+    row('testable', 'Make every requirement testable', [
+      card('t1', '“Fast” becomes', 'service', ['Feed p95 under 300 ms', 'Upload acknowledged < 2 s']),
+      card('t2', '“Reliable” becomes', 'network', ['99.95% available each month', 'No uploaded photo is ever lost']),
+      card('t3', '“Secure” becomes', 'storage', ['EU data stays in the EU', 'Private photos never public']),
+    ]),
+    row('wrong', 'Where it goes wrong', [
+      card('w1', 'Implicit need found late', 'warn', ['“Delete my data” forces a redesign of backups and logs']),
+      card('w2', 'Unmeasurable NFR', 'warn', ['“Make it fast” can never be met or missed']),
+      card('w3', 'Your turn', 'external', ['Rewrite “fast and reliable” as 2 measurable NFRs', 'Ride-hailing: 3 FR, 3 NFR, 2 constraints, 2 implicit']),
+    ]),
   ],
   edges: [
     { source: 'fr', target: 'prio' },
@@ -64,5 +75,7 @@ export const sdRequirements: Scene = {
     { source: 'cons', target: 'prio' },
     { source: 'assum', target: 'prio', dashed: true },
     { source: 'impl', target: 'prio', dashed: true },
+    { source: 'prio', target: 'testable' },
+    { source: 'testable', target: 'wrong' },
   ],
 }

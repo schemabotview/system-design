@@ -34,6 +34,10 @@ export const sdTime: Scene = {
       card('vc', 'Vector clocks', 'external', ['Detects concurrent writes exactly', 'Cost grows with the number of nodes']),
       card('ord', 'Ordering events', 'storage', ['Happens-before: same process, or send → receive', 'Otherwise concurrent: no honest order exists']),
     ]),
+    row('sd-time-put', 'Putting it to work', [
+      card('sd-time-w', 'Worked example & failure', 'service', ['Node clock +300 ms: its earlier write is stamped later and wins last-write-wins', 'Lamport can\'t say two events are concurrent']),
+      card('sd-time-t', 'Your turn', 'external', ['A sends at t = 5 to B whose counter is 3: B\'s new value? Are [2,1] and [1,2] ordered?', 'Design: order comments in a thread without synced clocks']),
+    ]),
   ],
   edges: [],
 }

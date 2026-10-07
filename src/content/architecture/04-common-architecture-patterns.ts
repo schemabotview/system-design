@@ -11,7 +11,6 @@ export const commonArchitecturePatterns: Section = {
 
 ### Model
 - **Layered**: presentation → logic → data, one direction. **Hexagonal**: domain in the middle, adapters outside behind **ports**
-- **Event-driven**, **CQRS**, **event sourcing**: patterns of flow
 - **Pipes and filters**: independent stages in a chain
 - **Layered**: simple, but layers leak · **hexagonal**: the core defines ports, adapters implement them
 - **Event-driven** (loose in time) · **CQRS** · **event sourcing** · **pipes and filters** (parse → filter → enrich → sink)

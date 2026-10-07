@@ -1,10 +1,10 @@
 import type { Scene } from '@graphlearning/flow'
-import { card, row } from '../kit'
+import { card, row, twoCols } from '../kit'
 
 // §6.7 — the case study as the scene: four stages a system grows through, each triggered by a
 // measurable pressure, joined by the strangler pattern. The cards are the techniques that make each
 // move safe (migrate, stay compatible, evolve schemas and APIs, manage debt, design for change).
-export const sdEvolution: Scene = {
+export const sdEvolution: Scene = twoCols({
   id: 'sd-evolution',
   padding: 0.12,
   flow: 'TB',
@@ -39,7 +39,7 @@ export const sdEvolution: Scene = {
           edges: [{ source: 'st3', target: 'st4', label: 'far users' }],
         },
       ],
-      edges: [{ source: 'early', target: 'late', label: 'strangler: route, replace, retire' }],
+      edges: [{ source: 'early', target: 'late', label: 'strangler pattern: route, replace, retire' }],
     },
     row('safe', 'Making each move safe', [
       card('mig', 'Migration', 'warn', ['Expand → dual-write → backfill → switch reads → contract', '1B rows ÷ 20K/s ≈ 14 h of backfill']),
@@ -53,6 +53,10 @@ export const sdEvolution: Scene = {
       card('debt', 'Technical debt', 'warn', ['Deliberate vs accidental', 'Interest = slower change; pay at the seams']),
       card('dfc', 'Designing for change', 'external', ['Narrow interfaces, clear data ownership', 'Reversible decisions, feature flags']),
     ]),
+    row('sd-evolution-put', 'Putting it to work', [
+      card('sd-evolution-w', 'Worked example & failure', 'service', ['Rename a column: add → dual-write → backfill → switch reads → drop. 1B rows ÷ 20K/s ≈ 14 h', 'Big-bang rewrites stall; debt left unpaid slows every change']),
+      card('sd-evolution-t', 'Your turn', 'external', ['Order the steps to rename username to handle', 'Design: the trigger for each of the four stages']),
+    ]),
   ],
   edges: [],
-}
+}, ['journey'])

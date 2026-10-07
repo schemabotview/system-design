@@ -12,7 +12,7 @@ export const designMethod: Section = {
 - **Requirements → Estimation → API → Data model → Architecture → Bottlenecks → Scaling → Reliability → Trade-offs**
 - Each step produces an **artifact** the next consumes; loop back when needed
 - Three movements: **understand** (1–2) · **shape** (3–5) · **defend** (6–9)
-- Three movements: **understand** (1–2) · **shape** (3–5) · **defend** (6–9)
+- Artifacts: scoped requirements · numbers · endpoints · schema · diagram · ranked bottlenecks · scaling plan · failure modes · decisions
 
 ### Worked example & failure
 - URL shortener: 400 reads/s, 3 TB → code→URL store + cache; viral link = **hot key**; 301 vs 302

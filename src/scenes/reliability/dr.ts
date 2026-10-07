@@ -31,6 +31,10 @@ export const sdDr: Scene = {
       card('fo', 'Regional failover', 'network', ['A runbook: detect, promote, repoint DNS, verify', 'Practise failback too']),
     ]),
     card('scen', 'Disaster scenarios', 'warn', ['Region outage · bad deploy · data corruption (replication copies it!)', 'Accidental delete · ransomware · compromised credentials']),
+    row('sd-dr-put', 'Putting it to work', [
+      card('sd-dr-w', 'Worked example & failure', 'service', ['RPO 5 min ⇒ copy every ≤ 5 min; nightly backups = up to 24 h lost', 'Restore 5 TB at 200 MB/s = 6.9 h — not a 1-hour RTO. Replication copies corruption']),
+      card('sd-dr-t', 'Your turn', 'external', ['Payments DB: RPO 1 min, RTO 15 min — which tier?', 'Design: DR tiers for each part of the social network']),
+    ]),
   ],
   edges: [],
 }

@@ -34,6 +34,10 @@ export const sdObservability: Scene = {
       card('alert', 'Alerting', 'warn', ['Alert on symptoms users feel', 'Page only for the actionable', 'Everything else is a ticket']),
       card('otel', 'Telemetry pipeline', 'service', ['OpenTelemetry: one vendor-neutral SDK', 'Sample traces; watch metric cardinality']),
     ]),
+    row('sd-observability-put', 'Putting it to work', [
+      card('sd-observability-w', 'Worked example & failure', 'service', ['Waterfall: 412 ms total, bank-api 290 ms → the cause is found in seconds', '10K req/s × 1 KB = 864 GB/day of logs; a user_id metric label = 1M series']),
+      card('sd-observability-t', 'Your turn', 'external', ['In the waterfall, where would you look first, and why?', 'Design: alerts for checkout']),
+    ]),
   ],
   edges: [],
 }

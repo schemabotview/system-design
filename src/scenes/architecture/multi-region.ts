@@ -54,6 +54,7 @@ export const sdMultiRegion: Scene = {
     row('modes', 'Who serves traffic', [
       card('ap', 'Active-passive', 'service', ['One region serves; one waits', 'Simple; standby is idle capacity', 'RPO = replication lag']),
       card('aa', 'Active-active', 'network', ['Every region serves', 'Low latency everywhere', 'Needs conflict handling or data ownership']),
+      card('sd-multi-region-w', 'Worked example & failure', 'service', ['Peak 58K req/s: 2 regions → 116K provisioned (200%); 3 → 87K (150%); 4 → 77K (133%)', 'Async lag 200 ms → up to 200 ms of writes lost on failover', 'Active-passive RPO = replication lag; active-active needs conflict handling or data ownership']),
     ]),
     row('data', 'Data across regions', [
       card('geo', 'Geo-replication', 'external', ['Async: a write returns locally', 'Sync would add a ~80 ms round trip to every write']),

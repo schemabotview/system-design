@@ -12,12 +12,12 @@ export const tradeOffAnalysis: Section = {
 ### Model
 - **Consistency ↔ availability** · **latency ↔ durability** · **read ↔ write** optimisation
 - **Simplicity ↔ scalability** · **cost ↔ reliability**
-- Record each decision: options, choice, price paid, when to revisit
 - Decision record: decision · context · options · chosen · price paid · revisit-if
 
 ### Worked example & failure
 - Sync replica adds a ~**80 ms** round trip; 3 regions at **150%** vs 2 at **200%**
 - Choosing a side silently; scaling before a number demands it
+- Hybrid feed: push for normal users, pull for celebrities; revisit if they pass 5% of posts
 
 ### Your turn
 - Name the trade-off in: sync replication · denormalised timelines · a second region

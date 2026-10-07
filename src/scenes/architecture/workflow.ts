@@ -77,6 +77,10 @@ export const sdWorkflow: Scene = {
       card('ltx', 'Long-running transactions', 'warn', ['Hours or days; human steps; timeouts', 'Every step idempotent and resumable']),
       card('so', 'Saga orchestration', 'external', ['The orchestrator runs the steps', 'And their compensations on failure']),
     ]),
+    row('sd-workflow-put', 'Putting it to work', [
+      card('sd-workflow-w', 'Worked example & failure', 'service', ['Order: PLACED → STOCK_RESERVED → PAID → SHIPPED; payment fails → release stock; 15 min timeout → cancel', 'Choreography across 6 services: the flow exists only in everyone\'s head']),
+      card('sd-workflow-t', 'Your turn', 'external', ['Model a refund as a state machine', 'Design: orchestrate or choreograph a 3-step vs a 12-step process?']),
+    ]),
   ],
   edges: [],
 }

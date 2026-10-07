@@ -36,6 +36,10 @@ export const sdCaching: Scene = {
       card('evict', 'Eviction', 'service', ['Full? drop something: LRU, LFU, FIFO', 'LRU = least recently used']),
       card('inval', 'Invalidation', 'warn', ['Delete on write', 'Race: a reader can re-cache the OLD value', 'TTL bounds the damage']),
     ]),
+    row('sd-caching-put', 'Putting it to work', [
+      card('sd-caching-w', 'Worked example & failure', 'service', ['Mean latency = h × 1 ms + (1 − h) × 20 ms: 90% → 2.9 ms, 99% → 1.2 ms', 'Race: reader re-caches the old value after the delete; write-back loses data on a crash']),
+      card('sd-caching-t', 'Your turn', 'external', ['95% hits at 58K req/s: mean latency and DB load?', 'Design: strategy for a product page, a cart, a view counter']),
+    ]),
   ],
   edges: [],
 }

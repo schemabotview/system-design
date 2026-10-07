@@ -57,10 +57,12 @@ export const sdProblem: Scene = {
     row('ask', 'What to pin down', [
       card('q', 'Clarifying questions', 'service', ['Scope: which features, which users?', 'Scale: DAU, peak, growth', 'Latency, consistency, durability targets']),
       card('hid', 'Hidden requirements', 'warn', ['Ordering, offline delivery, receipts', 'Abuse, retention, privacy law']),
+      card('sd-problem-w', 'Worked example & failure', 'service', ['Chat: 50M DAU × 40 msgs = 2B/day ≈ 23K msgs/s (116K peak); 10% online = 5M connections ÷ 100K = 50 gateways', 'Designing before clarifying; boundaries that grow to "everything"']),
     ]),
     row('shape', 'What shapes the design', [
       card('dc', 'Dominant constraints', 'external', ['The one or two that bend the architecture', 'Say it in one sentence']),
       card('cp', 'Critical paths', 'network', ['The steps that set latency or correctness', 'send → persist → deliver']),
+      card('sd-problem-t', 'Your turn', 'external', ['Ride-hailing: five clarifying questions and the dominant constraint?', 'Design: boundary and critical path for a video upload service']),
     ]),
   ],
   edges: [],

@@ -59,6 +59,10 @@ export const sdPatterns: Scene = {
       card('lay', 'Layered', 'warn', ['Simple, familiar', 'Risk: layers leak, or only pass data through']),
       card('hx', 'Hexagonal', 'service', ['Domain tests run in memory, in milliseconds', 'Swap a database or gateway without touching rules']),
     ]),
+    row('sd-patterns-put', 'Putting it to work', [
+      card('sd-patterns-w', 'Worked example & failure', 'service', ['Hexagonal: test the domain with in-memory adapters in milliseconds, not seconds', 'Layers leak (UI → DB) or pass data through unchanged']),
+      card('sd-patterns-t', 'Your turn', 'external', ['Where does "send email" go in a hexagonal design?', 'Design: patterns for a notification service']),
+    ]),
   ],
   edges: [],
 }

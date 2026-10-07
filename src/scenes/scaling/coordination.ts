@@ -32,6 +32,10 @@ export const sdCoordination: Scene = {
       card('fence', 'Fencing tokens', 'external', ['A number that only grows', 'The resource rejects any older token', 'Makes a paused holder harmless']),
       card('count', 'Distributed counters', 'service', ['One hot key caps ~100K ops/s', 'Shard it into N keys; sum on read', 'Approximate or CRDT counters merge']),
     ]),
+    row('sd-coordination-put', 'Putting it to work', [
+      card('sd-coordination-w', 'Worked example & failure', 'service', ['Lease expires during a 15 s GC pause; B takes token 34; A\'s write with 33 is rejected', '200K likes/s on one key vs ~100K/s limit → 8 shards ≈ 25K each']),
+      card('sd-coordination-t', 'Your turn', 'external', ['Lease 10 s, renewed every 3 s, a 15 s pause: what breaks, and the fix?', 'Design: run a nightly job on only one of 20 replicas']),
+    ]),
   ],
   edges: [],
 }

@@ -34,6 +34,10 @@ export const sdSync: Scene = {
       card('idem', 'Idempotency', 'external', ['Doing it twice = doing it once', 'PUT and DELETE already are', 'POST: client key, server stores the result']),
       card('pool', 'Connection pooling', 'storage', ['Reuse connections: a new one costs 2–3 RTT', 'Pool size ≈ rate × latency (Little’s Law)', '400 req/s × 0.025 s = 10 busy']),
     ]),
+    row('sd-sync-put', 'Putting it to work', [
+      card('sd-sync-w', 'Worked example & failure', 'service', ['3 layers × 3 tries = 27× load on the bottom service; no jitter → all retry together', 'Pool: 400 req/s × 25 ms = 10 busy connections']),
+      card('sd-sync-t', 'Your turn', 'external', ['1,000 req/s at 50 ms: pool size?', 'Design: make "charge a card" safe to retry']),
+    ]),
   ],
   edges: [],
 }

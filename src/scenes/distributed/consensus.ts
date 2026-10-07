@@ -47,6 +47,7 @@ export const sdConsensus: Scene = {
     row('ideas', 'The problem and its tools', [
       card('prob', 'The consensus problem', 'service', ['Nodes must agree on one value (or log)', 'Agreement · validity · termination', 'Despite crashes and delays']),
       card('quorum', 'Quorums', 'network', ['Majority = ⌊N/2⌋ + 1', 'Tolerates f = (N−1)/2 crashes', 'N=3 → 1 · N=5 → 2 · N=7 → 3', 'Any two majorities overlap']),
+      card('sd-consensus-w', 'Worked example & failure', 'service', ['5 nodes split 3 | 2: the majority side keeps committing; the minority cannot', 'Split brain needs two disjoint majorities — impossible']),
     ]),
     row('algos', 'How', [
       card('elect', 'Leader election', 'external', ['Follower times out (150–300 ms, random)', 'Becomes candidate in a new term', 'A majority of votes wins']),

@@ -43,10 +43,12 @@ export const sdFailure: Scene = {
     row('detect', 'Noticing failure', [
       card('hb', 'Heartbeats', 'service', ['Every node says “alive” each 500 ms', 'Suspect after k missed beats', 'Detection ≈ interval × k']),
       card('det', 'Failure detectors', 'warn', ['Slow looks exactly like dead', 'Short timeout: fast, but false alarms', 'Long timeout: accurate, but slow failover', 'Adaptive (phi-accrual) tunes it']),
+      card('f-w', 'Worked example & failure', 'service', ['1 s heartbeat, 3 misses: noticed in ~3–4 s', 'A 5 s GC pause is falsely declared dead', 'Byzantine needs 3f + 1 nodes; false suspicion → split brain']),
     ]),
     row('handle', 'Handling it', [
       card('byzc', 'Byzantine tolerance', 'external', ['Needs N ≥ 3f + 1 nodes', 'Used where nodes may be malicious', 'Most data-centre systems assume it away']),
       card('rec', 'Recovery strategies', 'storage', ['Restart and replay the log', 'Fail over to a replica', 'Retry idempotently', 'Rebuild from peers, then repair']),
+      card('f-t', 'Your turn', 'external', ['500 ms beats, suspect after 4 misses: detection time? And a 3 s pause?', 'Design: a detector for a leader with a 10 s RTO']),
     ]),
   ],
   edges: [],

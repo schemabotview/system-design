@@ -30,7 +30,7 @@ export const sdAsync: Scene = {
         { source: 'topic', target: 'notify' },
       ],
     },
-    row('semantics', 'What the broker promises', [
+    row('semantics', 'Delivery semantics: what the broker promises', [
       card('amo', 'At-most-once', 'warn', ['Send and forget; no redelivery', 'May lose messages', 'OK for metrics and logs']),
       card('alo', 'At-least-once', 'network', ['Redeliver until acked', 'May deliver duplicates', 'The usual default']),
       card('eo', 'Exactly-once effect', 'external', ['= at-least-once + idempotent consumer', 'Dedupe on a message id', 'True exactly-once delivery doesn’t exist']),

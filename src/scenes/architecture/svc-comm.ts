@@ -38,6 +38,10 @@ export const sdSvcComm: Scene = {
       card('mesh', 'Service mesh', 'external', ['A sidecar proxy per instance', 'mTLS, retries, timeouts, traffic split — no app code', 'Costs a hop and operational weight']),
       card('contract', 'Contract management', 'warn', ['OpenAPI / protobuf schemas', 'Consumer-driven contract tests in CI', 'Additive change only; deprecate, don’t break']),
     ]),
+    row('sd-svc-comm-put', 'Putting it to work', [
+      card('sd-svc-comm-w', 'Worked example & failure', 'service', ['5 sync services at 99.9% → 99.5%; make 3 of them events → 99.8%', 'Renaming a field breaks consumers; a mesh adds a hop and weight']),
+      card('sd-svc-comm-t', 'Your turn', 'external', ['Which changes are backward-compatible: add field · remove field · rename · change type?', 'Design: sync or async for each step of place-order']),
+    ]),
   ],
   edges: [],
 }

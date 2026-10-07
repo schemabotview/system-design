@@ -21,7 +21,7 @@ export const sdSpecialized: Scene = {
     {
       id: 'case',
       kind: 'list',
-      label: 'Case study · the storage layer of a social network',
+      label: 'Case study · choosing the appropriate storage model for a social network',
       pattern: 'group',
       framed: true,
       items: [
@@ -34,6 +34,10 @@ export const sdSpecialized: Scene = {
         'Recommendations → graph + vector index',
       ],
     },
+    row('sd-specialized-put', 'Putting it to work', [
+      card('sd-specialized-w', 'Worked example & failure', 'service', ['5M photos/day × 2 MB = 10 TB/day ≈ 3.65 PB/yr ≈ $84K/month at $0.023/GB', 'Search as the source of truth; blobs in the DB; a lake with no governance']),
+      card('sd-specialized-t', 'Your turn', 'external', ['Store for: invoices PDF · autocomplete · daily revenue report · "similar posts"', 'Design: place every datum of the social network']),
+    ]),
   ],
   edges: [],
 }

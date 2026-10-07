@@ -1,4 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
+import { card, row } from '../kit'
 
 // §1.3 — the seven attributes as one table: the question each answers, the number that measures it,
 // and a target worth recognising. Reading across a row is the lesson: every attribute is a number.
@@ -55,6 +56,10 @@ export const sdQuality: Scene = {
       ],
       edges: [],
     },
+    row('sd-quality-put', 'Putting it to work', [
+      card('sd-quality-w', 'Worked example & failure', 'service', ['99.9% ≈ 8.8 h/yr; 3 × 99.9% in series → 99.7%; 2 replicas → 99.9999%', 'One 99.9% dependency caps ten services near 99%; attributes conflict']),
+      card('sd-quality-t', 'Your turn', 'external', ['LB 99.99 → app 99.9 → DB 99.95: total?', 'Design: reach 99.99% for payments']),
+    ]),
   ],
   edges: [],
 }

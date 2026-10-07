@@ -31,6 +31,10 @@ export const sdTradeoffs: Scene = {
         'Revisit if: celebrity share of posts > 5%, or timeline storage cost doubles',
       ].join('\n'),
     },
+    row('sd-tradeoffs-put', 'Putting it to work', [
+      card('sd-tradeoffs-w', 'Worked example & failure', 'service', ['Sync replica adds a ~80 ms round trip; 3 regions at 150% vs 2 at 200%', 'Choosing a side silently; scaling before a number demands it']),
+      card('sd-tradeoffs-t', 'Your turn', 'external', ['Name the trade-off in: sync replication · denormalised timelines · a second region', 'Design: a decision record for chat message storage']),
+    ]),
   ],
   edges: [],
 }

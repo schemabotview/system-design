@@ -30,6 +30,10 @@ export const sdApi: Scene = {
       card('page', 'Pagination', 'warn', ['Offset: simple, slow when deep, drifts', 'Cursor / keyset: stable and index-fast', 'Return next_cursor; cap the page size']),
       card('ver', 'Versioning', 'storage', ['Additive changes are safe', 'Breaking → /v2 (or a header)', 'Announce deprecation and a sunset date']),
     ]),
+    row('sd-api-put', 'Putting it to work', [
+      card('sd-api-w', 'Worked example & failure', 'service', ['OFFSET 1000000 scans a million rows; WHERE id < :cursor LIMIT 20 uses the index', 'Renaming a field breaks every old mobile app; an unbounded list takes the service down']),
+      card('sd-api-t', 'Your turn', 'external', ['Name the resources and endpoints for comments on photos', 'Design: pick the style for a mobile app and for internal services']),
+    ]),
   ],
   edges: [],
 }

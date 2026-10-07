@@ -55,10 +55,12 @@ export const sdDataModel: Scene = {
     row('design', 'From diagram to design', [
       card('access', 'Access patterns first', 'warn', ['List them, rank by frequency', 'Open feed: 95% of reads', 'Post: 1 write per 10 reads', 'The schema serves these, not the nouns']),
       card('qdm', 'Query-driven modeling', 'external', ['One table per query shape', 'Choose the key from the lookup', 'Duplicate data to avoid joins']),
+      card('sd-data-model-w', 'Worked example & failure', 'service', ['Feed from 3 normalized tables ≈ 200 lookups (one per followee); precomputed timeline = 1 read', 'Denormalized copies drift; over-normalized reads drown in joins']),
     ]),
     row('shape', 'Normalise, then denormalise on purpose', [
       card('norm', 'Normalization', 'service', ['Each fact stored once', 'No update anomalies', 'Cost: joins on every read']),
       card('denorm', 'Denormalization', 'storage', ['Copy a fact to where it is read', 'Fast reads, fewer joins', 'Cost: every copy must be updated']),
+      card('sd-data-model-t', 'Your turn', 'external', ['Model orders: entities, relationships, what to copy onto an order line', 'Design: a chat app from its access patterns']),
     ]),
   ],
   edges: [],

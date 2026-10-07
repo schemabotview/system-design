@@ -39,6 +39,7 @@ export const sdLb: Scene = {
     row('layers', 'Where it looks', [
       card('l4', 'Layer 4', 'storage', ['Sees IP + port + TCP', 'Very fast; protocol-agnostic', 'Can pass TLS through untouched']),
       card('l7', 'Layer 7', 'network', ['Sees host, path, headers, cookies', 'Routes by content; terminates TLS; retries', 'More CPU per request']),
+      card('sd-lb-w', 'Worked example & failure', 'service', ['Mod-N hashing, 5 → 6 servers: ~83% of keys move; consistent hashing: ~17%', 'Shallow health check passes a broken app; a deep one can eject every backend at once']),
     ]),
     row('algos', 'How it chooses', [
       card('rr', 'Round robin · weighted', 'service', ['Take turns: 1, 2, 3, 1, 2, 3…', 'Weights match capacity (8 : 4 cores = 2 : 1)']),
@@ -48,6 +49,7 @@ export const sdLb: Scene = {
     row('ops', 'Staying correct', [
       card('hc', 'Health checks', 'warn', ['Probe /healthz every 5 s', '2 fails → out · 2 passes → back in', 'Check the dependencies it needs, not just “process up”']),
       card('glb', 'Global load balancing', 'external', ['Geo-DNS or anycast → nearest region', 'Fail a whole region over', 'DNS TTL limits how fast']),
+      card('sd-lb-t', 'Your turn', 'external', ['Backends with 10, 40, 25 open connections: least-connections picks?', 'Design: balancing for WebSocket chat vs an image CDN']),
     ]),
   ],
   edges: [],

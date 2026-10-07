@@ -14,7 +14,6 @@ export const evolutionaryArchitecture: Section = {
 - **Strangler**: route through a facade, replace piece by piece, retire the old
 - **Backward compatibility**, **schema and API evolution**: additive, deprecate, never break
 - **Technical debt** is a loan; design for change
-- **Strangler pattern**: facade → route a slice → verify → retire the old piece
 
 ### Worked example & failure
 - Rename a column: add → dual-write → backfill → switch reads → drop. 1B rows ÷ 20K/s ≈ **14 h**

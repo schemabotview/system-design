@@ -1,4 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
+import { card, row } from '../kit'
 
 // §1.1 — every plan bullet is a node. Top: the anatomy (system ⊃ subsystem ⊃ component, with the
 // interfaces drawn as labelled edges). Bottom: the three distinctions the section teaches, one card
@@ -94,6 +95,10 @@ export const sdLayers: Scene = {
       ],
       edges: [],
     },
+    row('sd-layers-put', 'Putting it to work', [
+      card('sd-layers-w', 'Worked example & failure', 'service', ['Photo app: Upload + Feed subsystems (HLD) → Ranker\'s heap, photos table (LLD)', 'No interface → no parallel teams; LLD before load → polishing the wrong part']),
+      card('sd-layers-t', 'Your turn', 'external', ['Write one subsystem\'s interface as 3 operations', 'Design: URL shortener in ≤ 5 boxes — your biggest regret?']),
+    ]),
   ],
   edges: [],
 }

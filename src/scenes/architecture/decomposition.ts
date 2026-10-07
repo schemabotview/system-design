@@ -54,6 +54,10 @@ export const sdDecomposition: Scene = {
       card('cc', 'Coupling and cohesion', 'warn', ['High cohesion: things that change together live together', 'Low coupling: few, narrow, stable links between parts']),
       card('dep', 'Dependency management', 'external', ['Depend on contracts, not internals', 'No cycles; arrows point to the stable core', 'Never share a database across boundaries']),
     ]),
+    row('sd-decomposition-put', 'Putting it to work', [
+      card('sd-decomposition-w', 'Worked example & failure', 'service', ['"Product" differs in Catalog, Ordering, Shipping → three contexts, not one model', 'n services allow n(n−1)/2 links: 8 → 28, 50 → 1,225']),
+      card('sd-decomposition-t', 'Your turn', 'external', ['Where does "Customer" differ across billing, support, marketing?', 'Design: split the social network into ≤ 6 services']),
+    ]),
   ],
   edges: [],
 }

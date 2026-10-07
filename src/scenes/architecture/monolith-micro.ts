@@ -34,6 +34,10 @@ export const sdMonolithMicro: Scene = {
       card('ops', 'Operational complexity', 'warn', ['Per service: pipeline, dashboards, alerts, on-call', 'Needs tracing, discovery, versioning']),
       card('mig', 'Migration strategies', 'storage', ['Modularise first', 'Extract the cleanest, least-entangled module', 'Never a big-bang rewrite']),
     ]),
+    row('sd-monolith-micro-put', 'Putting it to work', [
+      card('sd-monolith-micro-w', 'Worked example & failure', 'service', ['In-process ~100 ns vs network ~1 ms: 10,000×; 10 sequential calls at 99.9% → 99.0%', 'Per service: pipeline, dashboards, alerts, on-call', 'Each service adds a pipeline, dashboards, alerts, on-call and tracing']),
+      card('sd-monolith-micro-t', 'Your turn', 'external', ['A 6-engineer startup: how many services?', 'Design: choose for 6 people vs an 80-person org']),
+    ]),
   ],
   edges: [],
 }

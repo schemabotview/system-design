@@ -26,6 +26,10 @@ export const sdBottlenecks: Scene = {
       card('hot', 'Hot partitions', 'service', ['Symptom: one shard overloaded', 'Fix: split or salt the key, cache']),
       card('dep', 'Downstream dependencies', 'network', ['Symptom: we are slow when they are', 'Fix: timeout, breaker, bulkhead, async']),
     ]),
+    row('sd-bottlenecks-put', 'Putting it to work', [
+      card('sd-bottlenecks-w', 'Worked example & failure', 'service', ['App 2,000 req/s, DB 800 req/s: an 80% cache → DB limit 4,000; the app (2,000) is now the bottleneck', 'Low CPU but low throughput = locks or waiting on a dependency']),
+      card('sd-bottlenecks-t', 'Your turn', 'external', ['CPU 95%, memory 40%, disk 20%, network 10%: bottleneck? And CPU 30% with a full DB pool?', 'Design: bottlenecks of feed generation']),
+    ]),
   ],
   edges: [],
 }

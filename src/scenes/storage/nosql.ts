@@ -30,6 +30,10 @@ export const sdNosql: Scene = {
         'Otherwise stay relational: joins and transactions are free there',
       ],
     },
+    row('sd-nosql-put', 'Putting it to work', [
+      card('sd-nosql-w', 'Worked example & failure', 'service', ['Cart as key-value: 1 read by user; "revenue by product" means scanning everything', 'Document store then needing joins and multi-document transactions']),
+      card('sd-nosql-t', 'Your turn', 'external', ['Pick a store: session tokens · product catalog · sensor readings · friends-of-friends · 1M writes/s messages', 'Design: stores for a ride-hailing app']),
+    ]),
   ],
   edges: [],
 }

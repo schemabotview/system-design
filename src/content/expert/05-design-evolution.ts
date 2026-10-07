@@ -13,7 +13,6 @@ export const designEvolution: Section = {
 - Compute the load each size creates (20 reads/user/day, peak 5×)
 - **Complexity is justified only when a number crosses a limit**
 - 1K one box · 100K one DB + replica · 10M cache, replicas, queue · 1B shards, regions, cells
-- 1K one box · 100K DB + replica · 10M cache, replicas, queue · 1B shards, regions, cells
 
 ### Worked example & failure
 - 1K: **0.2/s** · 100K: **23/s** (peak 115) · 10M: **2.3K/s** (11.6K) · 1B: **231K/s** (1.2M)
