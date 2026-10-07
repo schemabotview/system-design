@@ -8,7 +8,7 @@ repo-specific. The syllabus is [`COURSE-PLAN.md`](COURSE-PLAN.md).
 
 `foundations · networking · storage · distributed · scaling · architecture · reliability · expert`
 = plan chapters 1–8. One chapter = one course = one folder in `src/content/` and `src/scenes/`.
-**Authored so far:** `foundations`, `networking`, `storage`, `distributed` (7 sections each). The rest are planned in `COURSE-PLAN.md`.
+**Authored so far:** `foundations`, `networking`, `storage`, `distributed`, `scaling` (7 sections each). The rest are planned in `COURSE-PLAN.md`.
 
 The recurring principle: *derive architectures from requirements, constraints and trade-offs — never
 recall them.* Chapter 1 §7 states the nine-step method every later case study follows.

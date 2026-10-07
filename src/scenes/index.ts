@@ -3,10 +3,11 @@ import { foundationsScenes } from './foundations'
 import { networkingScenes } from './networking'
 import { storageScenes } from './storage'
 import { distributedScenes } from './distributed'
+import { scalingScenes } from './scaling'
 
 // Scene registry. Sections reference scenes by id; scenes are grouped by course (one folder each,
 // mirroring src/content). Ids are globally unique across courses, so the flat lookup is unambiguous.
-const ALL: Scene[] = [...foundationsScenes, ...networkingScenes, ...storageScenes, ...distributedScenes]
+const ALL: Scene[] = [...foundationsScenes, ...networkingScenes, ...storageScenes, ...distributedScenes, ...scalingScenes]
 
 export const SCENES: Record<string, Scene> = Object.fromEntries(ALL.map((s) => [s.id, s]))
 

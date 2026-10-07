@@ -3,5 +3,6 @@
   "foundations": "System Design Foundations",
   "networking": "System Design Networking and APIs",
   "storage": "System Design Data Storage",
-  "distributed": "System Design Distributed Systems"
+  "distributed": "System Design Distributed Systems",
+  "scaling": "System Design Scaling Patterns"
 }
