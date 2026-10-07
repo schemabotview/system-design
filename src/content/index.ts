@@ -5,6 +5,7 @@ import { distributed } from './distributed'
 import { scaling } from './scaling'
 import { architecture } from './architecture'
 import { reliability } from './reliability'
+import { expert } from './expert'
 import type { Course, Section } from './types'
 
 // Course registry, in syllabus order. Courses are added here as each is authored:
@@ -17,6 +18,7 @@ export const COURSES: Record<string, Course> = {
   [scaling.id]: scaling,
   [architecture.id]: architecture,
   [reliability.id]: reliability,
+  [expert.id]: expert,
 }
 
 export type { Course, Section }
