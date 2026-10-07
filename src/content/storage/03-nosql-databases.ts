@@ -13,6 +13,7 @@ export const nosqlDatabases: Section = {
 - **Key-value** (get/put) · **document** (nested JSON) · **wide-column** (partition + sorted key)
 - **Graph** (traversals) · **time-series** (append, range, downsample)
 - Each gives up joins or flexible queries to gain **scale or shape**
+- **Wide-column**: partition + clustering key · **graph**: multi-hop traversals · **time-series**: append, downsample
 
 ### Worked example & failure
 - Cart as key-value: **1 read** by user; "revenue by product" means scanning everything

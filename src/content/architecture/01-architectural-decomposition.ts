@@ -13,6 +13,7 @@ export const architecturalDecomposition: Section = {
 - **Module**: in-process boundary. **Service**: network boundary. **Bounded context**: a model valid inside one boundary
 - **Cohesion**: what changes together lives together. **Coupling**: keep links few, narrow, stable
 - **Dependencies**: on contracts, acyclic, never a shared database
+- **Bounded context**: split where a word changes meaning (Product in Catalog / Ordering / Shipping)
 
 ### Worked example & failure
 - "Product" differs in Catalog, Ordering, Shipping → three contexts, not one model

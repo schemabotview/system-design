@@ -13,6 +13,7 @@ export const loadBalancing: Section = {
 - **L4**: routes on IP + port, very fast. **L7**: reads HTTP, routes on path/host, terminates TLS
 - **Round robin · weighted · least connections**; **consistent hashing** for key affinity
 - **Health checks** remove bad backends; **global** balancing picks a region
+- **Weighted routing** matches capacity: 8-core : 4-core = 2 : 1
 
 ### Worked example & failure
 - Mod-N hashing, 5 → 6 servers: **~83%** of keys move; consistent hashing: **~17%**

@@ -13,6 +13,7 @@ export const asynchronousCommunication: Section = {
 - **Event**: a fact. **Producer** publishes; **consumer** processes later
 - **Queue**: one consumer per message. **Pub/sub**: every subscriber gets a copy
 - **Delivery**: at-most-once · **at-least-once** · exactly-once effect = at-least-once + **idempotent consumer**
+- **Queue**: work distribution, one consumer per message · **pub/sub**: broadcast, every subscriber gets a copy
 
 ### Worked example & failure
 - Burst 5,000/s for 60 s vs 2,000/s capacity → backlog **180,000**; drains in 180 s at 1,000/s load

@@ -13,11 +13,14 @@ export const latencyThroughput: Section = {
 - **Latency**: one request's time, a **distribution** — p50 · p95 · p99. **Throughput**: completed req/s
 - **Bottleneck**: the slowest stage caps throughput
 - **L = λ × W**; queue wait ~ 1 ÷ (1 − utilisation)
+- **Throughput** = completed req/s; the slowest stage is the **bottleneck**: LB 5,000 → app 2,000 → DB 800 ⇒ **800**
+- Tail is ~4× the median: p50 100 ms · p95 268 · p99 403
 
 ### Worked example & failure
 - Median 100 ms, mean 120, p99 **403**
 - 100 backend calls at p99 → **63%** of pages hit a slow one
 - 90% utilisation = 10× service time
+- 1,000 req/s × 0.2 s = **200** in flight; 50 workers ⇒ **250 req/s** ceiling
 
 ### Your turn
 - 1 worker, 20 ms: latency at 25, 45, 49 req/s?

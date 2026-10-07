@@ -12,6 +12,7 @@ export const replication: Section = {
 ### Model
 - **Leader–follower**: writes to the leader, a log to followers. **Multi-leader**: a leader per region, conflicts. **Leaderless**: quorum, **W + R > N**
 - **Lag**: async followers are behind. **Failover**: detect → promote → repoint
+- **Lag** → read-your-writes: route the author to the leader for a few seconds
 
 ### Worked example & failure
 - 58K reads/s ÷ 15K/node → **4** read replicas

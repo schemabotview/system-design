@@ -13,6 +13,7 @@ export const edgeInfrastructure: Section = {
 - **Reverse proxy** and **API gateway** (auth, quotas, routing) sit in front of your code
 - **CDN** + **edge caching**: answer near the user; measure the **hit ratio**
 - **Rate limiting** (token bucket) · **service discovery** · **traffic management** (canary, weights)
+- **Reverse proxy**: TLS, compression, hides topology · **CDN**: copies near users, the metric is hit ratio
 
 ### Worked example & failure
 - 95% hit at 20 ms, misses 150 ms → mean **26.5 ms**; origin load 58K → **2.9K** req/s

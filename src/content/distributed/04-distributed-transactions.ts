@@ -13,6 +13,7 @@ export const distributedTransactions: Section = {
 - **Local** transaction: one database, ACID free. **Distributed**: build atomicity from messages
 - **2PC**: prepare (vote) → commit; atomic, but **blocks** if the coordinator dies
 - **Saga**: local steps + **compensating** transactions; **outbox** publishes reliably
+- **Transactional outbox**: business row + event row in ONE local tx; a relay publishes at-least-once
 
 ### Worked example & failure
 - 2PC needs all participants up: 3 × 99.9% → **99.7%**; locks held while blocked

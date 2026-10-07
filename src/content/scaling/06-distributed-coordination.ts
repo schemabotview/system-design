@@ -13,6 +13,7 @@ export const distributedCoordination: Section = {
 - **Distributed lock**: mutual exclusion — needs a consensus-backed service. **Lease**: a lock that expires
 - **Leader election**: hold the lease. **Coordination services**: ZooKeeper, etcd, Consul
 - **Fencing token**: monotonic number the resource checks. **Counters**: shard the hot key
+- **ZooKeeper · etcd · Consul**: small, strongly consistent (Raft); a single Redis node is not enough for locks
 
 ### Worked example & failure
 - Lease expires during a 15 s GC pause; B takes token 34; A's write with 33 is **rejected**

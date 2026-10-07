@@ -13,6 +13,8 @@ export const consensus: Section = {
 - **Problem**: agreement, validity, termination. **Quorum** = majority ⌊N/2⌋+1; tolerates (N−1)/2 crashes
 - **Leader election** by votes in numbered **terms**; **Raft** commits when a majority stored the entry
 - **Paxos**: proposers, acceptors, prepare/accept — same majority idea
+- **Quorum** ⌊N/2⌋ + 1: N=3 tolerates 1 · 5 → 2 · 7 → 3; four nodes are no better than three
+- Raft election timeout 150–300 ms, random; **terms** fence off old leaders
 
 ### Worked example & failure
 - 5 nodes split 3 | 2: the majority side keeps committing; the minority cannot

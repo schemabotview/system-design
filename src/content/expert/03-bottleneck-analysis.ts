@@ -12,10 +12,12 @@ export const bottleneckAnalysis: Section = {
 ### Model
 - **On a machine**: CPU · memory · disk · network. **Across the system**: database · lock contention · hot partitions · downstream dependencies
 - **USE** each resource: utilisation, saturation, errors. Fix one; the **next appears**
+- Four per machine (CPU · memory · disk · network) and four across the system
 
 ### Worked example & failure
 - App 2,000 req/s, DB 800 req/s: an 80% cache → DB limit **4,000**; the app (**2,000**) is now the bottleneck
 - Low CPU but low throughput = locks or waiting on a dependency
+- Low CPU + low throughput = something is waiting
 
 ### Your turn
 - CPU 95%, memory 40%, disk 20%, network 10%: bottleneck? And CPU 30% with a full DB pool?

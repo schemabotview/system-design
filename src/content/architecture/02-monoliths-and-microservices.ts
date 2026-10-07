@@ -13,10 +13,12 @@ export const monolithsAndMicroservices: Section = {
 - **Modular monolith**: one deployable, enforced boundaries, in-process calls
 - **Microservices**: independent deploy and scale, own data, network calls
 - **Distributed monolith**: must deploy together, shared DB — all the cost, no benefit
+- **Migration**: modularise first → extract the cleanest module; never a big-bang rewrite
 
 ### Worked example & failure
 - In-process ~100 ns vs network ~1 ms: **10,000×**; 10 sequential calls at 99.9% → **99.0%**
 - Per service: pipeline, dashboards, alerts, on-call
+- Each service adds a pipeline, dashboards, alerts, on-call and tracing
 
 ### Your turn
 - A 6-engineer startup: how many services?

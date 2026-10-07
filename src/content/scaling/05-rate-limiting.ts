@@ -13,10 +13,12 @@ export const rateLimiting: Section = {
 - **Fixed window**: cheap, bursty at the edge. **Sliding window**: accurate, costlier
 - **Token bucket**: refill r/s, burst b. **Leaky bucket**: constant drain, smooth
 - **Distributed**: shared Redis counter or local shares. **Quotas**: long-horizon budgets
+- **Token bucket**: refill r/s, burst b → 429 + Retry-After
 
 ### Worked example & failure
 - Fixed 100/min: 100 at :59 + 100 at :00 = **200 in 2 s**
 - Central counter = a hop per request; local-only limits drift apart
+- Shared Redis counter ≈ 100K ops/s per node; local shares drift when load is uneven
 
 ### Your turn
 - Bucket 5/s, burst 10: 10 instant requests, then when is the next allowed?

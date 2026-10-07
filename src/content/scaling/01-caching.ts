@@ -13,6 +13,7 @@ export const caching: Section = {
 - **Cache-aside**: app reads cache, then DB, then fills. **Read-through**: the cache loads itself
 - **Write-through**: both at once. **Write-back**: cache now, DB later
 - **TTL** bounds staleness; **eviction** (LRU, LFU) bounds size; **invalidate** on write
+- **Cache-aside** survives cache loss; **write-back** can lose data on a crash
 
 ### Worked example & failure
 - Mean latency = h × 1 ms + (1 − h) × 20 ms: 90% → **2.9 ms**, 99% → **1.2 ms**

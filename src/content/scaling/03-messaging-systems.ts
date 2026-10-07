@@ -14,6 +14,7 @@ export const messagingSystems: Section = {
 - **Consumer group**: one consumer per partition, so parallelism ≤ partitions
 - **Ordering** holds per partition; key → partition. **Backpressure**: pull, lag, bound
 - **DLQ** parks poison messages
+- **DLQ**: park a poison message after N tries; alert, inspect, replay
 
 ### Worked example & failure
 - 100K msg/s ÷ 5K per consumer = **20** → use 32 partitions

@@ -13,10 +13,12 @@ export const securityArchitecture: Section = {
 - **Authentication** (who) vs **authorization** (what). **OAuth 2.0** = delegated access; **OIDC** adds identity
 - **Encryption**: TLS in transit, AES at rest, keys in a KMS. **Secrets**: manager, rotation
 - **Zero trust**: verify every request. **Least privilege**: minimum rights, minimum time
+- OAuth flow: sign in at the IdP → code + PKCE → ID + access token → Bearer to the API
 
 ### Worked example & failure
 - Access token 15 min + refresh token: a leak is a **15-min** window, not forever
 - Keys in git; IAM policy \`*\`; tokens in browser storage readable by XSS
+- 401 = unknown caller · 403 = known, not allowed
 
 ### Your turn
 - 401 or 403: no token · valid token, no permission?

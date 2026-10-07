@@ -20,6 +20,7 @@ export const majorDesignCaseStudies: Section = {
 - **Ride-sharing**: in-memory geo-index by cell
 - **Payments**: ledger, idempotency, reconcile
 - **File storage**: chunks, dedupe, change log
+- Numbers that justify: 62⁷ ≈ 3.5T codes · 100K ops/s · 2.8K notifs/s · 50 gateways · ~200 followers · 250K updates/s · 50 Tbps · 262,144 chunks
 
 ### Your turn
 - For each: name the dominant constraint first

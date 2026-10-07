@@ -13,6 +13,7 @@ export const failureModels: Section = {
 - **Crash** → **crash-recovery** → **omission / partition** → **Byzantine** (lying nodes)
 - **Heartbeats**: detection ≈ interval × misses. **Detectors** can't tell slow from dead
 - **Recovery**: replay log, fail over, idempotent retry, rebuild from peers
+- **Network partitions** are omission failures: healthy nodes that cannot talk
 
 ### Worked example & failure
 - 1 s beat, 3 misses → **~3–4 s** to notice; a 5 s GC pause is falsely declared dead

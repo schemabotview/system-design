@@ -17,6 +17,7 @@ export const architectureDefense: Section = {
 - **Scale 10×?** 4K reads/s still fits; 30 TB → shard by code hash
 - **Consistency?** Creator reads at once; others within ~1 s
 - **Cost?** A few thousand dollars a month
+- Principle: every part has a reason, every failure a plan, every promise a boundary
 
 ### Your turn
 - Defend the payment system on all seven

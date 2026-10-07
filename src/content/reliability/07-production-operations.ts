@@ -13,6 +13,7 @@ export const productionOperations: Section = {
 - **Rolling**, **blue-green**, **canary** deployments; **feature flags** decouple deploy from release
 - **Configuration management**: reviewed, versioned, rolled out gradually
 - **Capacity management**: forecast, load-test, keep headroom
+- **Rolling** (mixed versions) · **blue-green** (instant rollback, 2× capacity) · **canary** 1 → 10 → 50 → 100%
 
 ### Worked example & failure
 - 10× traffic: DB reads 2.9K → 29K/s at 95% hits, but **348K/s** at 40% — **120×**, 23× the DB's limit

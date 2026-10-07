@@ -13,6 +13,8 @@ export const observability: Section = {
 - **Logs** (events) · **metrics** (numbers over time; RED, USE) · **traces** (a request across services)
 - **Correlation ID** joins them. **Telemetry**: OpenTelemetry, with sampling
 - **Alert** on symptoms users feel; page only the actionable
+- **Distributed tracing**: spans + a context header; sample ~1% of traces
+- **Telemetry**: OpenTelemetry; watch metric cardinality
 
 ### Worked example & failure
 - Waterfall: 412 ms total, **bank-api 290 ms** → the cause is found in seconds

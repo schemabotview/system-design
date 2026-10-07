@@ -13,6 +13,7 @@ export const timeAndOrdering: Section = {
 - **Physical clocks** drift and jump (NTP: ms to tens of ms); use **monotonic** clocks for durations
 - **Happens-before**: same process, or send → receive; else **concurrent**
 - **Lamport**: max + 1, orders consistently. **Vector clocks** detect concurrency
+- **Wall clocks**: NTP ms–tens of ms off, can jump backwards — never order events across machines with them
 
 ### Worked example & failure
 - Node clock +300 ms: its earlier write is stamped **later** and wins last-write-wins

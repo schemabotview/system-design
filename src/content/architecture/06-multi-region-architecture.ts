@@ -13,10 +13,12 @@ export const multiRegionArchitecture: Section = {
 - **Active-passive**: standby region; RPO = replication lag. **Active-active**: all serve; handle conflicts
 - **Geo-replication** is async (sync adds ~80 ms per write). **Data locality**: a home region per user
 - **Global routing**: geo-DNS / anycast. **Regional failure**: survivors carry the load
+- **Data locality**: a home region per user (and residency law) · **global routing**: DNS TTL limits failover speed
 
 ### Worked example & failure
 - Peak 58K req/s: 2 regions → **116K** provisioned (200%); 3 → **87K** (150%); 4 → **77K** (133%)
 - Async lag 200 ms → up to 200 ms of writes lost on failover
+- Active-passive RPO = replication lag; active-active needs conflict handling or data ownership
 
 ### Your turn
 - 4 regions: capacity per region and total?

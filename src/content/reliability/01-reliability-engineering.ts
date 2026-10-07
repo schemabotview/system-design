@@ -13,6 +13,7 @@ export const reliabilityEngineering: Section = {
 - **Reliability** (correct over time) ≠ **availability** (up). **Fault** ≠ **failure**
 - **Redundancy** counts only across independent **failure domains**; **fault tolerance** = detect + fail over
 - **Graceful degradation** sheds features, not the core. **Blast radius**: cells limit it
+- **Fault tolerance** = detect + redundancy + failover; N+1 or active-active
 
 ### Worked example & failure
 - 3 replicas in 3 zones at 99.9%: **99.9999999%** — but one shared LB at 99.99% caps the system near **99.99%**

@@ -13,10 +13,12 @@ export const scalingFundamentals: Section = {
 - **Scale up** (vertical): simple, but a ceiling and one point of failure
 - **Scale out** (horizontal): needs **stateless** servers; **stateful** needs sticky routing or partitioning
 - **Elasticity**: capacity follows load · **Amdahl**: 5% serial → max **20×**
+- **Stateless**: any replica serves any request; **stateful** needs sticky routing, partitioning, replication
 
 ### Worked example & failure
 - **Capacity planning**: 58K ÷ (2K × 60%) → **49** servers; survive a zone loss → **75**
 - Sticky sessions + scale-in = lost logins; a shared DB caps everything
+- **Amdahl**: 100 machines at 5% serial give only **~17×**
 
 ### Your turn
 - 21K req/s, 3K/server, 70% target?

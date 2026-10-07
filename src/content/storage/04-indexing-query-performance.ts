@@ -14,6 +14,7 @@ export const indexingQueryPerformance: Section = {
 - **Composite**: equality column first, then range; **leftmost prefix**. **Covering**: all columns in the index
 - The **planner** costs plans from statistics; \`EXPLAIN\` shows its choice
 - **Every index slows every write**
+- **Leftmost prefix**: index (a, b) serves a, or a + b — not b alone; **covering** → Index Only Scan
 
 ### Worked example & failure
 - 1B rows: B-tree **4 page reads** vs scanning 100 GB ≈ **100 s**

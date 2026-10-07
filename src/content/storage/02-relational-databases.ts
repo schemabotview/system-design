@@ -13,6 +13,7 @@ export const relationalDatabases: Section = {
 - **Tables** of rows; **primary key** identifies a row; **foreign key** references another and is checked
 - **SQL** is declarative; **joins** combine tables; **indexes** make lookups fast
 - **ACID**: **A**tomic · **C**onsistent · **I**solated · **D**urable
+- **Isolation** runs from read committed to serializable — stronger costs concurrency
 
 ### Worked example & failure
 - Transfer: debit, crash, no credit → **atomicity** rolls both back

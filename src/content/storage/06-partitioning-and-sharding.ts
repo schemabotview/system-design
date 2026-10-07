@@ -13,10 +13,12 @@ export const partitioningAndSharding: Section = {
 - **Range**: ordered, good scans, hot tail. **Hash**: even spread, scattered ranges
 - **Shard key**: high cardinality, even, in every hot query
 - **Rebalancing**: many fixed partitions; **consistent hashing**
+- **Range** keeps scans on one shard but a timestamp key piles on the last; **hash** spreads evenly
 
 ### Worked example & failure
 - 219 TB ÷ ~4 TB/node → **64 shards**; 1,024 partitions → 16 each; a new node takes **~16**
 - Hot key (celebrity) overloads one shard; cross-shard joins and transactions
+- Hot partition: salt or split the key, or cache it
 
 ### Your turn
 - 10 TB, 20K writes/s; node = 2 TB, 5K writes/s: how many shards?

@@ -13,6 +13,7 @@ export const consistencyModels: Section = {
 - **Eventual** → **monotonic reads** → **read-your-writes** → **causal** → **linearizable** (strong)
 - Stronger = fewer anomalies, **more coordination** and latency
 - Linearizable: as if one copy; a write that returned is seen by every later read
+- **Causal**: cause before effect, for everyone · **monotonic reads**: time never goes backwards
 
 ### Worked example & failure
 - Cross-region RTT 80 ms: a linearizable write waits **~80 ms**; an eventual local ack takes **~1 ms**

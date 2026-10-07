@@ -13,6 +13,7 @@ export const apiDesign: Section = {
 - **Resources** are nouns; methods are the verbs
 - **REST**: cacheable, simple. **RPC / gRPC**: functions, protobuf, streaming. **GraphQL**: client picks fields
 - **Pagination**: offset vs **cursor**. **Versioning**: additive is free; breaking → new version
+- **gRPC**: protobuf over HTTP/2, streaming, generated clients · **GraphQL**: one endpoint, but caching and N+1 are harder
 
 ### Worked example & failure
 - \`OFFSET 1000000\` scans a million rows; \`WHERE id < :cursor LIMIT 20\` uses the index

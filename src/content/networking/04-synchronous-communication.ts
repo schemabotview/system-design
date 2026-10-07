@@ -14,6 +14,7 @@ export const synchronousCommunication: Section = {
 - **Timeouts**: every call has a deadline. **Retries**: transient errors only, bounded
 - **Backoff + jitter**: wait random(0, base × 2ⁿ). **Idempotency** makes a retry safe
 - **Connection pool**: reuse; size ≈ rate × latency
+- **Timeouts**: connect ≠ read; pass the **remaining budget** downstream
 
 ### Worked example & failure
 - 3 layers × 3 tries = **27×** load on the bottom service; no jitter → all retry together

@@ -13,6 +13,7 @@ export const deliverySemantics: Section = {
 - **At-most-once**: ack first; may lose. **At-least-once**: ack after; may duplicate
 - **Exactly-once** *effect* = at-least-once + **idempotent consumer** (or an atomic in-broker transaction)
 - **Deduplicate** on a message id or natural key, in the same transaction as the effect
+- Duplicates come from producer retry, consumer crash before ack, and rebalance
 
 ### Worked example & failure
 - 1% redelivery on 100K/s = **1,000 duplicates/s**; an undeduped counter is 1% high

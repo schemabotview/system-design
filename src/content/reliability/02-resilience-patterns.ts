@@ -13,6 +13,7 @@ export const resiliencePatterns: Section = {
 - **Timeout** bounds waits. **Retry** only transient + idempotent, within a budget. **Backoff + jitter** spreads the herd
 - **Circuit breaker**: closed → open → half-open. **Bulkhead**: pool per dependency
 - **Load shedding**: reject early, lowest priority first
+- **Exponential backoff** with **jitter**: random(0, min(cap, base × 2ⁿ))
 
 ### Worked example & failure
 - 200 threads, a dependency hangs 30 s at 100 req/s → all threads busy in **2 s**; bulkheads confine it

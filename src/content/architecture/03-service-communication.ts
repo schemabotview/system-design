@@ -13,6 +13,7 @@ export const serviceCommunication: Section = {
 - **Sync** for answers needed now; **events** for facts others react to
 - **Discovery**: registry of live instances. **Gateway**: front door. **Mesh**: sidecar for mTLS, retries, traffic split
 - **Contracts**: schemas + consumer-driven tests; additive change only
+- **API gateway** (+ a BFF per client) · **mesh**: sidecar with mTLS, retries, traffic split
 
 ### Worked example & failure
 - 5 sync services at 99.9% → **99.5%**; make 3 of them events → **99.8%**

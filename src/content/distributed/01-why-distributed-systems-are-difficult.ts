@@ -17,6 +17,7 @@ export const whyDistributedSystemsAreDifficult: Section = {
 ### Worked example & failure
 - 10,000 servers × 3% a year = 300 failures/yr ≈ **one every 29 hours**
 - A timeout has **four** explanations; blind retry may repeat a charge
+- The four explanations need opposite responses: retry is right for 1–2, repeats the work in 3, adds load in 4
 
 ### Your turn
 - 2,000 nodes, MTBF 3 years: failures per day?

@@ -13,6 +13,7 @@ export const sreFundamentals: Section = {
 - **SLI** (measure) → **SLO** (internal target) → **SLA** (external contract, looser)
 - **Error budget** = 1 − SLO. **Burn rate** says how fast it is spent
 - **Incident management**: roles, severity, mitigate first. **Postmortem**: blameless, with owners
+- **Burn rate** 14.4× for 1 h = 2% of a 30-day budget → page
 
 ### Worked example & failure
 - 99.9% → **43.2 min** / 30 days; 99.99% → **4.3 min**. 14.4× burn for 1 h = 2% of the month

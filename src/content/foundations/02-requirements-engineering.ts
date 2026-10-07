@@ -18,6 +18,7 @@ export const requirementsEngineering: Section = {
 ### Worked example & failure
 - Photo app: feed p95 < 300 ms, 6 engineers, EU data; Won't (v1): video. Dominant: **feed latency**
 - Missed implicit need ("delete my data") → late redesign
+- Implicit needs surface late: deleted stays deleted, private stays private
 
 ### Your turn
 - Rewrite "fast and reliable" as 2 measurable NFRs

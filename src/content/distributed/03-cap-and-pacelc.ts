@@ -13,6 +13,8 @@ export const capAndPacelc: Section = {
 - **C** = linearizability · **A** = every live node answers · **P** = the network splits
 - Partitions happen, so the real choice is **CP vs AP**, and only *during* one
 - **PACELC**: if **P**: A or C; **E**lse: **L**atency or **C**onsistency
+- **CAP theorem**: during a partition a replica must refuse (C) or answer, possibly stale (A)
+- Misconceptions: not "pick two" · C ≠ ACID · A ≠ high uptime
 
 ### Worked example & failure
 - Bank balance: refuse rather than lie (CP). Shopping cart: accept both sides, merge (AP)

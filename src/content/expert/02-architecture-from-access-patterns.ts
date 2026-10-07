@@ -12,10 +12,12 @@ export const architectureFromAccessPatterns: Section = {
 ### Model
 - **Users → operations → access patterns → data model → traffic → components**
 - Each arrow produces an artifact the next step needs; technology appears only at the end
+- Chat: send / load history / mark read → append by conversation, last 50 → messages(conversation_id, seq)
 
 ### Worked example & failure
 - URL shortener: create + resolve → lookup by code only → key-value; 40 w/s, 400 r/s → app + KV + cache
 - "Use Kafka and Cassandra" first; ignoring read/write skew and hot data
+- Traffic 23K writes/s (116K peak), reads 5× — only then: gateway, queue, wide-column store, cache
 
 ### Your turn
 - Derive the components for autocomplete

@@ -13,6 +13,7 @@ export const specializedStorage: Section = {
 - **Object / blob**: big immutable files by key. **Search engine**: inverted index, derived copy
 - **Warehouse**: columnar SQL. **Lake**: raw files. **Vector DB**: nearest-neighbour on embeddings
 - Choose by **how the data is accessed**
+- Choose by access pattern: object/blob (key → bytes) · search (term → docs) · warehouse (scans) · lake (raw files) · vector (nearest neighbour)
 
 ### Worked example & failure
 - 5M photos/day × 2 MB = **10 TB/day** ≈ 3.65 PB/yr ≈ **$84K/month** at $0.023/GB

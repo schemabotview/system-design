@@ -13,10 +13,12 @@ export const dataProcessingArchitectures: Section = {
 - **Batch** (bounded, high throughput) vs **stream** (unbounded, low latency, windows, late data)
 - **Lambda**: batch + speed layer. **Kappa**: one stream path; replay the log
 - **Event sourcing**: events are the truth. **CQRS**: separate write/read models. **Materialized views**
+- **Lambda** = two code paths that drift · **Kappa** = replay the log · late events need **watermarks**
 
 ### Worked example & failure
 - 100K events/s × 1 KB = **8.6 TB/day**; 7 days = 60 TB; replay at 2 GB/s ≈ **8.4 h**
 - Two code paths drift; a view lags its log; late events miscounted
+- Late event: drop, allow lateness, or route to a side output
 
 ### Your turn
 - An event arrives 90 s late for a 1-min window: options?

@@ -13,6 +13,7 @@ export const dataModeling: Section = {
 - **Entities** and **relationships** (1:1, 1:N, M:N via a join table); a **schema** fixes tables, keys, types
 - List **access patterns** first; **query-driven modeling** shapes tables around them
 - **Normalize**: each fact once. **Denormalize**: copy a fact to where it is read
+- Access patterns first: feed = 95% of reads, post = 1 write per 10 reads
 
 ### Worked example & failure
 - Feed from 3 normalized tables ≈ **200 lookups** (one per followee); precomputed timeline = **1 read**

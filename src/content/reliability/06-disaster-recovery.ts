@@ -12,6 +12,8 @@ export const disasterRecovery: Section = {
 ### Model
 - **RPO**: data you can lose. **RTO**: time to be back. Four **tiers**: backup · pilot light · warm standby · active-active
 - **3-2-1 backups**, point-in-time recovery. **Restore testing**. **Regional failover** runbook
+- **Tiers**: backup & restore (hours) · pilot light · warm standby (min / s) · active-active (≈ 0, ≈ 2× cost)
+- **3-2-1**: 3 copies, 2 media, 1 offsite; immutable; point-in-time recovery from the log
 
 ### Worked example & failure
 - RPO 5 min ⇒ copy every ≤ 5 min; nightly backups = up to **24 h** lost

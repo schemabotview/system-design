@@ -13,6 +13,7 @@ export const qualityAttributes: Section = {
 - **Availability · reliability · scalability · performance · durability · maintainability · security**
 - Availability = MTBF ÷ (MTBF + MTTR); up ≠ correct (**reliability**)
 - **Series** multiplies; **redundancy**: 1 − (1 − a)ⁿ
+- **Durability**: yearly loss probability (11 nines) · **performance**: latency percentiles · **security**: threat model, least privilege · **maintainability**: lead time, time to restore
 
 ### Worked example & failure
 - 99.9% ≈ **8.8 h**/yr; 3 × 99.9% in series → **99.7%**; 2 replicas → **99.9999%**

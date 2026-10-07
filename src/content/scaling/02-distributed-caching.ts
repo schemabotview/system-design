@@ -13,6 +13,8 @@ export const distributedCaching: Section = {
 - **Cache cluster**: keys **partitioned** across shards (hash slots / consistent hashing)
 - **Replication** per shard for failover — async, so recent writes can vanish
 - **Hot keys**, **stampedes**, and cache-vs-DB **consistency** are the failure modes
+- Redis cluster: **16,384 hash slots** map to shards; consistent hashing moves few keys
+- Stampede fixes: **single-flight**, jittered TTL, serve-stale-while-refreshing
 
 ### Worked example & failure
 - Key at 5K req/s, rebuild 200 ms → **1,000** DB queries at expiry; single-flight → **1**

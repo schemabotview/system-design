@@ -13,6 +13,8 @@ export const quantitativeAnalysis: Section = {
 - QPS = DAU × actions ÷ 86,400; **read:write ratio** splits it
 - **Peak = 3–10× avg**; **concurrent** = DAU × % online
 - Storage = writes × size × retention × **replicas**; bandwidth = QPS × bytes ÷ 8
+- **Requests per second**, **read/write ratio** (10:1) and **concurrent users** (10% of DAU = 5M online)
+- **Storage estimation** 200 GB/day → 73 TB/yr; **bandwidth estimation** 5 KB × 58K/s ≈ 290 MB/s ≈ 2.3 Gbit/s
 
 ### Worked example & failure
 - 50M DAU × 20 reads → **11.6K/s**, peak **58K/s**; 219 TB at 3 replicas
