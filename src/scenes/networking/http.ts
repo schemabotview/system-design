@@ -1,5 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
-import { card, row } from './kit'
+import { card, row } from '../kit'
 
 // §2.2 — one real exchange as a code card (the request/response model, headers, a status line), then
 // the vocabulary around it: methods, status classes, and what HTTP/1.1 → 2 → 3 each fixed.

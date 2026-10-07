@@ -1,5 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
-import { card, row } from './kit'
+import { card, row } from '../kit'
 
 // §2.5 — one upload event fanning out through a queue and a topic (the producers/consumers and
 // pub/sub shapes drawn), then what the broker promises: delivery semantics and what to expect.

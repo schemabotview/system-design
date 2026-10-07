@@ -2,7 +2,7 @@
 
 A GraphL concept app: *System Design — from foundations to expert practice.* Eight chapters, each a
 course of seven sections; each section is a diagram or code scene beside a slide, with narration.
-The syllabus is [`COURSE-PLAN.md`](COURSE-PLAN.md). Chapters 1–2 (`foundations`, `networking`) are authored.
+The syllabus is [`COURSE-PLAN.md`](COURSE-PLAN.md). Chapters 1–3 (`foundations`, `networking`, `storage`) are authored.
 
 ```bash
 npm install

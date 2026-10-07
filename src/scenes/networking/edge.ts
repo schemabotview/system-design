@@ -1,5 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
-import { card, row } from './kit'
+import { card, row } from '../kit'
 
 // §2.7 — the case study as the scene: the request's whole path through the edge, each hop labelled
 // with what it can do for the request, then one card per edge component from the plan.

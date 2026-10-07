@@ -1,5 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
-import { card, row } from './kit'
+import { card, row } from '../kit'
 
 // §2.1 — the four steps before the first useful byte (the connection-establishment story, as a chain
 // of cards with their round-trip cost), then one card per networking primitive from the plan.

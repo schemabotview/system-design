@@ -1,5 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
-import { card, row } from './kit'
+import { card, row } from '../kit'
 
 // §2.3 — resources as a code card (REST made concrete), the three styles side by side, then the two
 // cross-cutting decisions every API makes: how to page and how to change without breaking callers.

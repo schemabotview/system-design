@@ -1,5 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
-import { card, row } from './kit'
+import { card, row } from '../kit'
 
 // §2.6 — the balancer in context (clients → LB → pool, with the health probe dashed), then one card
 // each for the layer choice, the algorithms, health checks and the global tier.

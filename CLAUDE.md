@@ -8,7 +8,7 @@ repo-specific. The syllabus is [`COURSE-PLAN.md`](COURSE-PLAN.md).
 
 `foundations · networking · storage · distributed · scaling · architecture · reliability · expert`
 = plan chapters 1–8. One chapter = one course = one folder in `src/content/` and `src/scenes/`.
-**Authored so far:** `foundations`, `networking` (7 sections each). The rest are planned in `COURSE-PLAN.md`.
+**Authored so far:** `foundations`, `networking`, `storage` (7 sections each). The rest are planned in `COURSE-PLAN.md`.
 
 The recurring principle: *derive architectures from requirements, constraints and trade-offs — never
 recall them.* Chapter 1 §7 states the nine-step method every later case study follows.
@@ -41,6 +41,7 @@ Adding a course: scenes folder + `index.ts` → register in `src/scenes/index.ts
 - Plot series `labelAt` is an **absolute data position**, not an offset from the series.
 - `kind: 'table'` right-aligns text columns and renders small; prefer `list` or a code card when the
   cells are prose.
+- Cross-container edges can vanish: point an edge at the leaf node, not at its container.
 - A computed curve (latency distribution) is written in the scene file — the engine has no parser.
 
 ## Build & verify

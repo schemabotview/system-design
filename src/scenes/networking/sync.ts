@@ -1,5 +1,5 @@
 import type { Scene } from '@graphlearning/flow'
-import { card, row } from './kit'
+import { card, row } from '../kit'
 
 // §2.4 — the safe way to call another service, as code (deadline, idempotency key, bounded retries
 // with jittered backoff), flanked by the four ideas it applies.
