@@ -8,7 +8,10 @@ repo-specific. The syllabus is [`COURSE-PLAN.md`](COURSE-PLAN.md).
 
 `foundations · networking · storage · distributed · scaling · architecture · reliability · expert`
 = plan chapters 1–8. One chapter = one course = one folder in `src/content/` and `src/scenes/`.
-**Authored:** all eight chapters, 56 sections (`foundations` … `expert`). Remaining: narration audio (Colab + Chatterbox), the 4K / mobile render check, and catalog registration.
+**Status:** all eight chapters, 56 sections authored and live at `graphl.in/system-design/` (Pages via
+`.github/workflows/deploy.yml`; listed in `ui-graphl`'s catalog). `scripts/audio-manifest.json` (56 entries)
+and the Colab notebook (pointed at this repo, branch `main`) are ready; **narration wavs are not yet
+generated**. Not yet checked at 4K or mobile portrait.
 
 The recurring principle: *derive architectures from requirements, constraints and trade-offs — never
 recall them.* Chapter 1 §7 states the nine-step method every later case study follows.
@@ -43,7 +46,23 @@ Adding a course: scenes folder + `index.ts` → register in `src/scenes/index.ts
   cells are prose.
 - Cross-container edges can vanish: point an edge at the leaf node, not at its container.
 - Edges between nodes inside DIFFERENT nested groups tangle; keep an edge's ends in one flat flow, or stack the groups top-to-bottom.
+- **Edges and orphan rows**: when a scene has top-level `edges`, a node with no edge lands in the first
+  rank beside the others, not below. Chain every added row (`{ source: 'prev', target: 'row' }`).
 - A computed curve (latency distribution) is written in the scene file — the engine has no parser.
+
+## Filling the frame
+
+Measured at 1920×1080 in the browser (rendered rects, not source): the slide should use ~90–97% of the
+panel height (`.slide-panel__scaler` scrollHeight ÷ panel height; > 1.0 clips), and a scene should
+use as much of the pane as its shape allows — each axis tops out near 0.89, so ~0.75–0.80 of the area
+is the practical ceiling. Mean today: slides 0.94, scenes 0.72.
+- A **wide, short** scene (width binds) has free vertical room: add a row of cards.
+- A **tall, narrow** scene (height binds) needs width, not height: add a card to a 2-card row. Do not
+  add rows, and `twoCols` (in `src/scenes/kit.ts`) only helps when the rows are narrow — it made
+  3-card-wide rows worse. Only `sd-evolution` uses it.
+- Cover the plan's bullets with the plan's own words (`COURSE-PLAN.md`), not synonyms.
+- Slide detail comes from the narration, so narration rarely needs to change when a slide grows; if it
+  does, run `npm run gen:audio` and re-record only the sections whose narration changed.
 
 ## Build & verify
 
