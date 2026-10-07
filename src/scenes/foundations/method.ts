@@ -1,11 +1,11 @@
 import type { Scene } from '@graphlearning/flow'
 
-// §1.7 — the nine-step method, banded by what each step is FOR (understand · design · harden) so the
-// sequence reads as three movements, not nine peers. Badges carry the order. Each step is a chip
-// because they are things counted, not described; the slide says what artifact each one produces.
+// §1.7 — the nine-step method, banded by what each step is FOR (understand · design · defend). Each
+// step is a card whose sub names the ARTIFACT it produces: the next step consumes that artifact,
+// which is the whole reason the order is fixed.
 export const sdMethod: Scene = {
   id: 'sd-method',
-  padding: 0.14,
+  padding: 0.12,
   flow: 'TB',
   nodes: [
     {
@@ -15,8 +15,8 @@ export const sdMethod: Scene = {
       icon: 'scroll',
       flow: 'LR',
       children: [
-        { id: 'req', label: 'Requirements', badge: '01', variant: 'chip' },
-        { id: 'est', label: 'Estimation', badge: '02', variant: 'chip' },
+        { id: 'req', label: 'Requirements', badge: '01', sub: 'scoped FR · NFR · constraints' },
+        { id: 'est', label: 'Estimation', badge: '02', sub: 'QPS · storage · bandwidth' },
       ],
       edges: [{ source: 'req', target: 'est' }],
     },
@@ -27,9 +27,9 @@ export const sdMethod: Scene = {
       icon: 'layers',
       flow: 'LR',
       children: [
-        { id: 'api', label: 'API', badge: '03', variant: 'chip' },
-        { id: 'data', label: 'Data model', badge: '04', variant: 'chip' },
-        { id: 'arch', label: 'Architecture', badge: '05', variant: 'chip' },
+        { id: 'api', label: 'API', badge: '03', sub: 'operations and contracts' },
+        { id: 'data', label: 'Data model', badge: '04', sub: 'schema + access patterns' },
+        { id: 'arch', label: 'Architecture', badge: '05', sub: 'components and data flow' },
       ],
       edges: [
         { source: 'api', target: 'data' },
@@ -43,10 +43,10 @@ export const sdMethod: Scene = {
       icon: 'shield',
       flow: 'LR',
       children: [
-        { id: 'bott', label: 'Bottlenecks', badge: '06', variant: 'chip' },
-        { id: 'scale', label: 'Scaling', badge: '07', variant: 'chip' },
-        { id: 'rel', label: 'Reliability', badge: '08', variant: 'chip' },
-        { id: 'trade', label: 'Trade-offs', badge: '09', variant: 'chip' },
+        { id: 'bott', label: 'Bottlenecks', badge: '06', sub: 'ranked limits' },
+        { id: 'scale', label: 'Scaling', badge: '07', sub: 'plan + capacity' },
+        { id: 'rel', label: 'Reliability', badge: '08', sub: 'failure modes + fixes' },
+        { id: 'trade', label: 'Trade-offs', badge: '09', sub: 'decisions, with reasons' },
       ],
       edges: [
         { source: 'bott', target: 'scale' },

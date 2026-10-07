@@ -4,16 +4,17 @@ import type { Scene } from '@graphlearning/flow'
 // the narration can point at), beside the handful of constants worth knowing cold.
 export const sdEstimation: Scene = {
   id: 'sd-estimation',
-  padding: 0.14,
-  flow: 'LR',
+  padding: 0.17,
+  flow: 'TB',
   nodes: [
     {
       id: 'sheet',
       kind: 'code',
       filename: 'estimate.py',
       label: [
-        '# 50M daily users, 20 reads each, 1 write per 10 reads',
+        '# 50M daily users, 20 reads each, 10 reads per write',
         'dau        = 50_000_000',
+        'online     = dau * 0.10             # 5M concurrent at peak',
         'reads_day  = dau * 20            # 1_000_000_000',
         'read_qps   = reads_day / 86_400  # ~11_600 /s average',
         'peak_qps   = read_qps * 5        # ~58_000 /s peak',
@@ -34,6 +35,12 @@ export const sdEstimation: Scene = {
       ].join('\n'),
     },
     {
+      id: 'notes',
+      label: 'Keep these at hand',
+      pattern: 'group',
+      flow: 'LR',
+      children: [
+    {
       id: 'consts',
       kind: 'list',
       label: 'Constants worth knowing cold',
@@ -44,9 +51,27 @@ export const sdEstimation: Scene = {
         '1 month ≈ 2.6 million s',
         '1 KB = 10³ B · 1 GB = 10⁹ B',
         '1 Gbit/s ≈ 125 MB/s',
+        'concurrent ≈ arrivals × session length',
         'peak ≈ 3–10× the average',
         'bits ≠ bytes: ÷ 8',
       ],
+    },
+    {
+      id: 'method',
+      kind: 'list',
+      label: 'The back-of-envelope method',
+      pattern: 'service',
+      framed: true,
+      items: [
+        '1  State every assumption',
+        '2  Round hard: powers of ten',
+        '3  Average first, then peak',
+        '4  Convert to machines',
+        '5  Sanity-check against one box',
+      ],
+    },
+      ],
+      edges: [],
     },
   ],
   edges: [],

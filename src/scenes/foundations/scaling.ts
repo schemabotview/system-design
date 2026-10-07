@@ -5,9 +5,15 @@ import type { Scene } from '@graphlearning/flow'
 // nothing, so any of them can vanish — all the state lives in the one storage node.
 export const sdScaling: Scene = {
   id: 'sd-scaling',
-  padding: 0.14,
-  flow: 'LR',
+  padding: 0.12,
+  flow: 'TB',
   nodes: [
+    {
+      id: 'compare',
+      label: 'Scale up or scale out',
+      pattern: 'group',
+      flow: 'LR',
+      children: [
     {
       id: 'up',
       label: 'Scale up · vertical',
@@ -46,6 +52,42 @@ export const sdScaling: Scene = {
         { source: 'lb', target: 'tier' },
         { source: 'tier', target: 'state' },
       ],
+    },
+      ],
+      edges: [],
+    },
+    {
+      id: 'notes',
+      label: 'The rest of the model',
+      pattern: 'group',
+      flow: 'LR',
+      children: [
+        {
+          id: 'stateless',
+          kind: 'list',
+          label: 'Stateless vs stateful',
+          pattern: 'network',
+          framed: true,
+          items: ['Stateless: any replica serves any request', 'Stateful: sticky routing, partitioning, replication', 'Push state to a store; keep servers disposable'],
+        },
+        {
+          id: 'elastic',
+          kind: 'list',
+          label: 'Elasticity',
+          pattern: 'service',
+          framed: true,
+          items: ['Capacity follows load, up and down', 'A new instance takes 1–2 min to be useful', 'Scale on a leading signal, not a crisis'],
+        },
+        {
+          id: 'plan',
+          kind: 'list',
+          label: 'Capacity planning',
+          pattern: 'storage',
+          framed: true,
+          items: ['N = peak ÷ (per-node × target use) + spare', '58K ÷ (2K × 60%) = 49 servers', 'Survive a zone loss → 75'],
+        },
+      ],
+      edges: [],
     },
   ],
   edges: [],

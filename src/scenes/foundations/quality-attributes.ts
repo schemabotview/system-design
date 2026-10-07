@@ -5,6 +5,7 @@ import type { Scene } from '@graphlearning/flow'
 export const sdQuality: Scene = {
   id: 'sd-quality',
   padding: 0.12,
+  flow: 'TB',
   nodes: [
     {
       id: 'qa',
@@ -20,6 +21,39 @@ export const sdQuality: Scene = {
         ['Maintainability', 'How cheaply can it change?', 'lead time · time to restore', 'deploy in under a day'],
         ['Security', 'Who may do or see what?', 'threat model · incidents', 'least privilege, encrypted'],
       ],
+    },
+    {
+      id: 'more',
+      label: 'Reading the numbers',
+      pattern: 'group',
+      flow: 'LR',
+      children: [
+        {
+          id: 'nines',
+          kind: 'list',
+          label: 'Availability in nines',
+          pattern: 'service',
+          framed: true,
+          items: ['99.9% → 8.8 hours a year', '99.99% → 53 minutes', '99.999% → 5 minutes'],
+        },
+        {
+          id: 'compose',
+          kind: 'list',
+          label: 'Composing availability',
+          pattern: 'network',
+          framed: true,
+          items: ['Series: multiply — 3 × 99.9% → 99.7%', 'Redundant: 1 − (1 − a)ⁿ — 2 × 99.9% → 99.9999%'],
+        },
+        {
+          id: 'tension',
+          kind: 'list',
+          label: 'Attributes pull against each other',
+          pattern: 'warn',
+          framed: true,
+          items: ['Durability ↔ write latency', 'Scalability ↔ simplicity', 'Security ↔ performance', 'Availability ↔ cost'],
+        },
+      ],
+      edges: [],
     },
   ],
   edges: [],

@@ -20,9 +20,15 @@ const mean = Math.exp(MU + (SIGMA * SIGMA) / 2)
 
 export const sdLatency: Scene = {
   id: 'sd-latency',
-  padding: 0.14,
-  flow: 'LR',
+  padding: 0.12,
+  flow: 'TB',
   nodes: [
+    {
+      id: 'top',
+      label: 'Latency is a distribution',
+      pattern: 'group',
+      flow: 'LR',
+      children: [
     {
       id: 'dist',
       kind: 'plot',
@@ -54,6 +60,50 @@ export const sdLatency: Scene = {
         '1,000 req/s × 0.2 s = 200 in flight',
         '50 workers ÷ 0.2 s = 250 req/s ceiling',
       ],
+    },
+      ],
+      edges: [],
+    },
+    {
+      id: 'pipe',
+      label: 'Throughput is set by the slowest stage',
+      pattern: 'group',
+      icon: 'repeat',
+      flow: 'LR',
+      children: [
+        { id: 'lb', label: 'Load balancer', pattern: 'network', icon: 'network', sub: 'can pass 5,000 req/s' },
+        { id: 'app', label: 'App tier', pattern: 'service', icon: 'server', sub: 'can pass 2,000 req/s' },
+        { id: 'db', label: 'Database', pattern: 'warn', icon: 'database', sub: 'can pass 800 req/s — the bottleneck' },
+      ],
+      edges: [
+        { source: 'lb', target: 'app' },
+        { source: 'app', target: 'db' },
+      ],
+    },
+    {
+      id: 'tails',
+      label: 'Why the tail and the queue matter',
+      pattern: 'group',
+      flow: 'LR',
+      children: [
+        {
+          id: 'fan',
+          kind: 'list',
+          label: 'Tail latency at fan-out',
+          pattern: 'warn',
+          framed: true,
+          items: ['100 calls, each slow 1 time in 100', '1 − 0.99¹⁰⁰ = 63% of pages hit a slow call', 'Fix: parallelise, time out, hedge, cache'],
+        },
+        {
+          id: 'queue',
+          kind: 'list',
+          label: 'Queueing: wait ≈ service ÷ (1 − utilisation)',
+          pattern: 'network',
+          framed: true,
+          items: ['50% busy → 2× service time', '90% busy → 10×', '99% busy → 100×'],
+        },
+      ],
+      edges: [],
     },
   ],
   edges: [],

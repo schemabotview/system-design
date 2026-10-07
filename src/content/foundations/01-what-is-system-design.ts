@@ -11,14 +11,13 @@ export const whatIsSystemDesign: Section = {
 *Name a system's parts; separate architecture from detail.*
 
 ### Model
-- **System** = components + **interfaces**; an interface is a promise — *what*, never *how*
+- **System** = components + **interfaces** (a promise: *what*, never *how*); **subsystem** = a group with its own interface; **component** = a unit at this level
+- **Architecture** = costly to reverse; **detailed design** = cheap
+- **System design**: machines and processes under load and failure. **Software design**: code inside one process
 - **HLD**: boxes, stores, protocols. **LLD**: classes, schemas, algorithms
 
-### Worked example
-- Photo app: upload + feed subsystems → the feed's heap and \`photos\` table
-
-### Architecture & failure
-- Architecture = decisions **costly to reverse**
+### Worked example & failure
+- Photo app: Upload + Feed subsystems (HLD) → Ranker's heap, \`photos\` table (LLD)
 - No interface → no parallel teams; LLD before load → polishing the wrong part
 
 ### Your turn

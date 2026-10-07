@@ -10,14 +10,12 @@ export const scalingFundamentals: Section = {
 *Choose scale up or out; size a tier with headroom.*
 
 ### Model
-- **Vertical**: simple, but a ceiling and one point of failure
-- **Horizontal**: needs **stateless** servers; state moves to a shared store
-- **Amdahl**: 5% serial → max **20×**
+- **Scale up** (vertical): simple, but a ceiling and one point of failure
+- **Scale out** (horizontal): needs **stateless** servers; **stateful** needs sticky routing or partitioning
+- **Elasticity**: capacity follows load · **Amdahl**: 5% serial → max **20×**
 
-### Worked example
-- 58K req/s ÷ (2K × 60%) → **49** servers; survive a zone loss → **75**
-
-### Architecture & failure
+### Worked example & failure
+- **Capacity planning**: 58K ÷ (2K × 60%) → **49** servers; survive a zone loss → **75**
 - Sticky sessions + scale-in = lost logins; a shared DB caps everything
 
 ### Your turn

@@ -10,14 +10,14 @@ export const requirementsEngineering: Section = {
 *Turn a vague brief into testable, prioritised requirements.*
 
 ### Model
-- **Functional** (behaviour) · **non-functional** (measurable) · **constraints** (fixed) · **assumptions** (written down)
-- Testable, or it is a wish. Rank by **MoSCoW**, name the **dominant NFR**
+- **Functional** (behaviour) · **non-functional** (measurable) · **constraints** (fixed from outside)
+- **Assumptions**: beliefs written down so they can be checked
+- **Explicit** = stated; **implicit** = unsaid but expected — go and find them
+- Testable, or it is a wish. **MoSCoW**, then the **dominant NFR**
 
-### Worked example
-- Photo app: feed p95 < 300 ms, 6 engineers, EU data. Dominant: **feed latency**
-
-### Architecture & failure
-- Missed implicit need ("delete my data") → redesign late
+### Worked example & failure
+- Photo app: feed p95 < 300 ms, 6 engineers, EU data; Won't (v1): video. Dominant: **feed latency**
+- Missed implicit need ("delete my data") → late redesign
 
 ### Your turn
 - Rewrite "fast and reliable" as 2 measurable NFRs
